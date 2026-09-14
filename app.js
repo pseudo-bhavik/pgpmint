@@ -925,8 +925,10 @@ elBtnAbort.addEventListener('click', function() {
   log('Emergency abort requested by operator.', 'warn');
 });
 
-elBtnExportKeys.addEventListener('click', exportUpdatedKeysJson);
-elBtnExportCsv.addEventListener('click', exportRunLogCsv);
+if (elBtnExportKeys) elBtnExportKeys.addEventListener('click', exportUpdatedKeysJson);
+const elWmBtnExportKeys = $('wm-btn-export-keys');
+if (elWmBtnExportKeys) elWmBtnExportKeys.addEventListener('click', exportUpdatedKeysJson);
+if (elBtnExportCsv) elBtnExportCsv.addEventListener('click', exportRunLogCsv);
 elBtnClearTable.addEventListener('click', function() {
   elExecTbody.innerHTML = '<tr><td colspan="8" class="empty-row">- No transactions yet -</td></tr>';
   runLog = [];
