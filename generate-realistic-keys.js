@@ -145,14 +145,21 @@ function buildRealisticIdentity() {
   };
 }
 
+function getRandomShuffledDate() {
+  const now = Date.now();
+  const maxPastMs = 10 * 60 * 60 * 1000; // 10 hours in milliseconds
+  const randomOffset = Math.floor(Math.random() * maxPastMs);
+  return new Date(now - randomOffset);
+}
+
 // ── BANNER ────────────────────────────────────────────────────────────────────
 console.log('\x1b[32m');
 console.log('╔══════════════════════════════════════════════════════════════╗');
-console.log('║       REALISTIC HIGH-VARIETY GPG KEY GENERATOR  v2.0        ║');
-console.log('║       ECC Curve25519 · 12 Natural Pattern Varieties         ║');
+console.log('║       REALISTIC HIGH-VARIETY GPG KEY GENERATOR  v2.1        ║');
+console.log('║       ECC Curve25519 · Timestamp Shuffling (-10h Window)    ║');
 console.log('╚══════════════════════════════════════════════════════════════╝');
 console.log('\x1b[0m');
-console.log(`\x1b[33m[INFO]\x1b[0m Generating \x1b[1m${count}\x1b[0m realistic GPG keypair(s). Please wait…\n`);
+console.log(`\x1b[33m[INFO]\x1b[0m Generating \x1b[1m${count}\x1b[0m realistic GPG keypair(s) with randomized -10h timestamps. Please wait…\n`);
 
 // ── Load or Initialize keys.json ──────────────────────────────────────────────
 let existingKeys = [];
@@ -176,6 +183,7 @@ const startTime = Date.now();
 
 for (let i = 0; i < count; i++) {
   const identity = buildRealisticIdentity();
+  const keyDate = getRandomShuffledDate();
   const progress = `[${String(i + 1).padStart(String(count).length, '0')}/${count}]`;
   process.stdout.write(`\r\x1b[36m${progress}\x1b[0m Creating key for \x1b[32m${identity.name.padEnd(20)}\x1b[0m <\x1b[33m${identity.email}\x1b[0m>…`);
 
@@ -184,6 +192,7 @@ for (let i = 0; i < count; i++) {
       type: 'ecc',
       curve: 'curve25519',
       userIDs: [{ name: identity.name, email: identity.email }],
+      date: keyDate,
       passphrase: '',
       format: 'armored',
     });
