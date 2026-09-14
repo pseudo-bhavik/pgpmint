@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "generate": "node generate-keys.js",
+    "generate:realistic": "node generate-realistic-keys.js",
     "dev": "npx serve . -p 3000 --no-clipboard",
     "serve": "npx serve . -p 3000"
   },
