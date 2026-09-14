@@ -1,5 +1,5 @@
 /**
- * app.js — Batch Mint Engine v3.1 (Security-Audited & Gas-Optimized)
+ * app.js — Batch Mint Engine v3.2 (Wallet Native Picker + Auto Min Gas Burner Engine)
  * 100% Client-Side · Ethereum Mainnet (Chain ID: 1)
  * Target Contract: 0x3286e6525A38cD1d277ECaF435b156c0cc892C29
  * Target Method: Function #9 seen(string pgp) [Selector: 0x363355d2]
@@ -15,8 +15,8 @@ const TARGET_SELECTOR       = '0x363355d2';
 const CHAIN_ID              = 1n;
 const DEFAULT_RPC           = 'https://ethereum-rpc.publicnode.com';
 
-// Minimum Safe Gas Settings for Ethereum Mainnet (Non-Urgent / Lowest Viable Cost)
-const MIN_SAFE_PRIORITY_GWEI = '0.05'; // 0.05 Gwei standard miner tip for Mainnet
+// Minimum Safe Gas Settings for Autonomous Burner Wallets (Ethereum Mainnet)
+const MIN_SAFE_PRIORITY_GWEI = '0.05'; // 0.05 Gwei lowest safe miner tip for Mainnet
 const DEFAULT_GAS_LIMIT      = 80000n; // Safe upper bound for seen(string pgp)
 
 // ── STATE VARIABLES (TRANSIENT IN-MEMORY ONLY) ─────────────────────────────────
@@ -49,12 +49,8 @@ const elWcAddress         = $('wc-address');
 const elWcBalance         = $('wc-balance');
 const elWcNetwork         = $('wc-network');
 
-const elWmGasBase         = $('wm-gas-base');
-const elWmGasPriority     = $('wm-gas-priority');
-const elWmGasLimit        = $('wm-gas-limit');
 const elWmBtnFetchGas     = $('wm-btn-fetch-gas');
 const elWmGrBase          = $('wm-gr-base');
-const elWmGrPriority      = $('wm-gr-priority');
 const elWmGasStatus       = $('wm-gas-status');
 
 const elWmGpgAvail        = $('wm-gpg-avail');
@@ -73,13 +69,11 @@ const elWmMintResult      = $('wm-mint-result');
 
 // Bulk Mode Elements
 const elRpcUrl            = $('rpc-url');
-const elGasBase           = $('gas-base');
-const elGasPriority      = $('gas-priority');
-const elGasLimit         = $('gas-limit');
 const elTxDelay          = $('tx-delay');
 const elBtnFetchGas      = $('btn-fetch-gas');
 const elGrBase           = $('gr-base');
 const elGrPriority       = $('gr-priority');
+const elGrEstCost        = $('gr-est-cost');
 const elGasStatus        = $('gas-status');
 
 const elPkInput          = $('pk-input');
@@ -160,8 +154,8 @@ function switchMode(mode) {
   elBulkWrap.style.display   = isWallet ? 'none'  : 'block';
 
   elModeDescText.textContent = isWallet
-    ? 'Interactive single mint via MetaMask / Browser Wallet · Function #9 seen(string pgp)'
-    : 'Automated sequential batch loop over burner private keys · Function #9 seen(string pgp)';
+    ? 'Interactive single mint via MetaMask / Browser Wallet (native gas selector)'
+    : 'Automated sequential batch loop over burner private keys (autonomous min gas mode)';
 
   log('Switched to ' + (isWallet ? 'OPTION 1 (Wallet Connect)' : 'OPTION 2 (Bulk Mint)') + ' mode.', 'info');
 
@@ -258,16 +252,15 @@ async function autoLoadKeys() {
   }
 }
 
-// ── GAS FEE CALCULATION & MINIMUM OPTIMIZATION ─────────────────────────────────
+// ── GAS FEE CALCULATION ───────────────────────────────────────────────────────
 async function fetchGasFromProvider(provider, isWalletMode) {
   try {
     const feeData = await provider.getFeeData();
     let baseGwei = '0.20';
-    let prioGwei = MIN_SAFE_PRIORITY_GWEI; // Default to lowest safe tip (0.05 Gwei)
+    let prioGwei = MIN_SAFE_PRIORITY_GWEI;
 
     if (feeData.maxFeePerGas) {
       baseGwei = (Number(feeData.maxFeePerGas) / 1e9).toFixed(2);
-      // Use minimum safe priority tip (0.05 Gwei) or provider's tip if lower
       if (feeData.maxPriorityFeePerGas) {
         const rawPrio = Number(feeData.maxPriorityFeePerGas) / 1e9;
         prioGwei = Math.min(rawPrio, 0.10).toFixed(2);
@@ -278,24 +271,25 @@ async function fetchGasFromProvider(provider, isWalletMode) {
     }
 
     if (isWalletMode) {
-      elWmGrBase.textContent     = baseGwei;
-      elWmGrPriority.textContent = prioGwei;
-      elWmGasStatus.textContent  = 'Live (Updated ' + new Date().toLocaleTimeString() + ')';
-      if (parseFloat(elWmGasBase.value) === 0) elWmGasBase.placeholder = baseGwei;
-      if (parseFloat(elWmGasPriority.value) === 0) elWmGasPriority.placeholder = prioGwei;
+      if (elWmGrBase) elWmGrBase.textContent = baseGwei;
+      if (elWmGasStatus) elWmGasStatus.textContent = 'Live (Updated ' + new Date().toLocaleTimeString() + ')';
+      log('Live Base Fee: ' + baseGwei + ' Gwei (MetaMask will prompt its native fee picker on submit)', 'info');
     } else {
-      elGrBase.textContent       = baseGwei;
-      elGrPriority.textContent   = prioGwei;
-      elGasStatus.textContent    = 'Live (Updated ' + new Date().toLocaleTimeString() + ')';
-      elStatGas.textContent      = baseGwei;
-      if (parseFloat(elGasBase.value) === 0) elGasBase.placeholder = baseGwei;
-      if (parseFloat(elGasPriority.value) === 0) elGasPriority.placeholder = prioGwei;
-    }
+      if (elGrBase) elGrBase.textContent = baseGwei;
+      if (elGrPriority) elGrPriority.textContent = prioGwei;
+      if (elGasStatus) elGasStatus.textContent = 'Live (Updated ' + new Date().toLocaleTimeString() + ')';
+      if (elStatGas) elStatGas.textContent = baseGwei;
 
-    log('Gas updated (' + (isWalletMode ? 'Wallet' : 'RPC') + '): Base = ' + baseGwei + ' Gwei | Min Priority Tip = ' + prioGwei + ' Gwei', 'success');
+      // Estimate total ETH cost per mint (e.g. ~60,000 gas * (base + 0.05))
+      const totalGweiPerTx = (parseFloat(baseGwei) + parseFloat(prioGwei));
+      const estEthPerTx = (65000 * totalGweiPerTx / 1e9).toFixed(6);
+      if (elGrEstCost) elGrEstCost.textContent = '~' + estEthPerTx + ' ETH';
+
+      log('Burner Auto Min Gas: Base = ' + baseGwei + ' Gwei | Miner Tip = ' + prioGwei + ' Gwei | Est: ' + estEthPerTx + ' ETH/tx', 'success');
+    }
   } catch (err) {
     const statusEl = isWalletMode ? elWmGasStatus : elGasStatus;
-    statusEl.textContent = 'Fetch failed';
+    if (statusEl) statusEl.textContent = 'Fetch failed';
     log('Gas fetch note: ' + err.message, 'warn');
   }
 }
@@ -311,61 +305,40 @@ async function fetchWalletGas() {
 
 async function fetchBulkGas() {
   const url = (elRpcUrl.value || DEFAULT_RPC).trim();
-  elGasStatus.textContent = 'Fetching...';
+  if (elGasStatus) elGasStatus.textContent = 'Fetching...';
   try {
     const provider = new ethers.JsonRpcProvider(url, 1);
     await fetchGasFromProvider(provider, false);
   } catch (err) {
-    elGasStatus.textContent = 'Failed';
+    if (elGasStatus) elGasStatus.textContent = 'Failed';
     log('RPC gas fetch error: ' + err.message, 'error');
   }
 }
 
 /**
- * Builds gas overrides targeting the absolute lowest safe gas on Ethereum Mainnet.
- * - Minimum Priority Tip: 0.05 Gwei (or user override)
- * - Base Fee: live base fee with 15% next-block buffer (EVM automatically refunds unused base fee)
- * - Gas Limit: dynamically estimated for payload with 15% safety buffer (fallback: 80,000)
+ * Autonomous minimum gas calculator for Burner Private Keys (Option 2).
+ * Strictly targets lowest safe gas:
+ * - Miner Priority Tip: 0.05 Gwei
+ * - maxFeePerGas: baseFee + 10% buffer + 0.05 Gwei tip (EVM refunds unused base fee)
+ * - gasLimit: dynamic simulation + 10% margin (fallback: 80,000)
  */
-async function buildGasOverrides(provider, isWalletMode, contractInstance, keyPayload) {
-  const limitInput = isWalletMode ? elWmGasLimit : elGasLimit;
-  const baseInput  = isWalletMode ? elWmGasBase  : elGasBase;
-  const prioInput  = isWalletMode ? elWmGasPriority : elGasPriority;
-
-  const customLimit = parseInt(limitInput.value, 10) || 0;
-  const baseVal     = parseFloat(baseInput.value) || 0;
-  const prioVal     = parseFloat(prioInput.value) || 0;
-
-  // 1. Determine Gas Limit
+async function buildBurnerGasOverrides(provider, contractInstance, keyPayload) {
   let gasLimit = DEFAULT_GAS_LIMIT;
-  if (customLimit > 0 && customLimit !== 80000 && customLimit !== 120000) {
-    gasLimit = BigInt(customLimit);
-  } else if (contractInstance && keyPayload) {
+  if (contractInstance && keyPayload) {
     try {
       const estimated = await contractInstance.seen.estimateGas(keyPayload);
-      gasLimit = (estimated * 115n) / 100n; // 15% safety buffer
+      gasLimit = (estimated * 110n) / 100n; // 10% safety buffer
     } catch {
       gasLimit = DEFAULT_GAS_LIMIT;
     }
-  }
-
-  // 2. Determine EIP-1559 Pricing
-  if (baseVal > 0 && prioVal > 0) {
-    return {
-      gasLimit: gasLimit,
-      maxFeePerGas: ethers.parseUnits(baseVal.toFixed(9), 'gwei'),
-      maxPriorityFeePerGas: ethers.parseUnits(prioVal.toFixed(9), 'gwei')
-    };
   }
 
   const feeData = await provider.getFeeData();
   const minPrioFee = ethers.parseUnits(MIN_SAFE_PRIORITY_GWEI, 'gwei');
 
   if (feeData.maxFeePerGas) {
-    // maxFeePerGas = (baseFee * 1.15) + minPriorityFee
-    // Unused maxFee is refunded by Ethereum EVM; buffer prevents tx failing if base fee ticks up by 1 block
     const baseFee = feeData.maxFeePerGas;
-    const maxFeeWithBuffer = (baseFee * 115n) / 100n + minPrioFee;
+    const maxFeeWithBuffer = (baseFee * 110n) / 100n + minPrioFee;
     return {
       gasLimit: gasLimit,
       maxFeePerGas: maxFeeWithBuffer,
@@ -487,19 +460,20 @@ async function executeSingleMint() {
   elBtnSingleMint.disabled = true;
   elWmMintResult.className = 'mint-result-box pending';
   elWmMintResult.style.display = 'block';
-  elWmMintResult.innerHTML = '<div>&squf; Submitting transaction for GPG Key #' + gpgKey.id + ' via Function #9: seen(string pgp)... Please confirm in your wallet.</div>';
+  elWmMintResult.innerHTML = '<div>&squf; Submitting transaction for GPG Key #' + gpgKey.id + '... Please choose your preferred gas fees (e.g. Low) in your wallet popup.</div>';
 
-  log('Initiating transaction with GPG Key #' + gpgKey.id + ' via Function #9 seen(string pgp) [0x363355d2]...', 'info');
+  log('Initiating transaction with GPG Key #' + gpgKey.id + ' via Function #9 seen(string pgp)...', 'info');
 
   try {
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, connectedSigner);
-    const overrides = await buildGasOverrides(browserProvider, true, contract, gpgKey.armoredKey);
 
-    const tx = await contract[TARGET_FUNCTION_NAME](gpgKey.armoredKey, overrides);
+    // MANUAL WALLET CONNECT MODE: We do not pass fee overrides so MetaMask / Rabby
+    // displays its native gas selection UI (Low / Market / Custom) directly to the user.
+    const tx = await contract[TARGET_FUNCTION_NAME](gpgKey.armoredKey);
     log('Transaction broadcast: ' + tx.hash, 'tx');
 
     const cleanHash = escapeHtml(tx.hash);
-    elWmMintResult.innerHTML = '<div>&squf; Transaction broadcast at minimum safe gas!<br>Waiting for confirmation...<br><a href="https://etherscan.io/tx/' + cleanHash + '" target="_blank" rel="noopener noreferrer" style="color:var(--blue);">View on Etherscan: ' + cleanHash + ' &nearr;</a></div>';
+    elWmMintResult.innerHTML = '<div>&squf; Transaction broadcast!<br>Waiting for confirmation...<br><a href="https://etherscan.io/tx/' + cleanHash + '" target="_blank" rel="noopener noreferrer" style="color:var(--blue);">View on Etherscan: ' + cleanHash + ' &nearr;</a></div>';
 
     const receipt = await tx.wait(1);
 
@@ -672,10 +646,10 @@ async function processWalletItem(params) {
 
     gpgKey.inProgress = true;
     updateTableRow(idx, 'pending', { gpgId: gpgKey.id });
-    log('[' + (idx + 1) + '] Assigned GPG Key #' + gpgKey.id + '. Broadcasting via Function #9 seen(string pgp)...', 'info');
+    log('[' + (idx + 1) + '] Assigned GPG Key #' + gpgKey.id + '. Broadcasting via Function #9 at minimum safe cost...', 'info');
 
     const contract  = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
-    const overrides = await buildGasOverrides(provider, false, contract, gpgKey.armoredKey);
+    const overrides = await buildBurnerGasOverrides(provider, contract, gpgKey.armoredKey);
 
     let tx;
     try {
@@ -778,13 +752,13 @@ async function runAutonomousBatch() {
 
   let minBalWei;
   try {
-    const overrides = await buildGasOverrides(provider, false, null, null);
+    const overrides = await buildBurnerGasOverrides(provider, null, null);
     const gasPrice = overrides.maxFeePerGas || overrides.gasPrice || ethers.parseUnits('15', 'gwei');
     minBalWei = overrides.gasLimit * gasPrice;
-    log('Estimated minimum balance per wallet: ' + ethers.formatEther(minBalWei) + ' ETH', 'info');
+    log('Estimated minimum balance required per burner: ' + ethers.formatEther(minBalWei) + ' ETH', 'info');
   } catch (e) {
-    minBalWei = ethers.parseEther('0.001');
-    log('Gas estimation fallback: 0.001 ETH', 'warn');
+    minBalWei = ethers.parseEther('0.0008');
+    log('Gas estimation fallback: 0.0008 ETH', 'warn');
   }
 
   isBatchRunning = true;
@@ -918,9 +892,9 @@ elBtnConnect.addEventListener('click', connectWallet);
 elBtnDisconnect.addEventListener('click', disconnectWallet);
 elBtnSwitchNetwork.addEventListener('click', switchToMainnet);
 
-elWmBtnFetchGas.addEventListener('click', fetchWalletGas);
-elBtnFetchGas.addEventListener('click', fetchBulkGas);
-elRpcUrl.addEventListener('change', fetchBulkGas);
+if (elWmBtnFetchGas) elWmBtnFetchGas.addEventListener('click', fetchWalletGas);
+if (elBtnFetchGas) elBtnFetchGas.addEventListener('click', fetchBulkGas);
+if (elRpcUrl) elRpcUrl.addEventListener('change', fetchBulkGas);
 
 elBtnSingleMint.addEventListener('click', executeSingleMint);
 
@@ -963,8 +937,7 @@ elBtnClearTable.addEventListener('click', function() {
 async function init() {
   log('BATCH MINT DASHBOARD INITIALIZED', 'success');
   log('Contract: ' + CONTRACT_ADDRESS + ' · Ethereum Mainnet (Chain ID 1)', 'info');
-  log('Target Method: Function #9 seen(string pgp) [0x363355d2] (Etherscan Verified)', 'info');
-  log('Gas Mode: Minimum Viable Gas Enabled (Min Tip: ' + MIN_SAFE_PRIORITY_GWEI + ' Gwei)', 'info');
+  log('Target Method: Function #9 seen(string pgp) [0x363355d2] (Locked)', 'info');
 
   updateWalletCount();
   await fetchWalletGas();

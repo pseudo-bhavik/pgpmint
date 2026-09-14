@@ -12,8 +12,8 @@
     <!-- HEADER -->
     <header class="site-header">
       <div class="header-left">
-        <h1>Batch Mint Engine <span style="font-size:13px; color:var(--amber); font-weight:normal;">v3.1</span></h1>
-        <div class="subtitle">// 100% Client-Side Ephemeral Execution &bull; Zero Server &bull; Zero Local Storage &bull; Lowest Gas Mode</div>
+        <h1>Batch Mint Engine <span style="font-size:13px; color:var(--amber); font-weight:normal;">v3.2</span></h1>
+        <div class="subtitle">// 100% Client-Side Ephemeral Execution &bull; Zero Server &bull; Zero Local Storage &bull; Minimum Cost Engine</div>
       </div>
       <div class="header-badges">
         <span class="chain-badge">ETH MAINNET [ID: 1]</span>
@@ -84,28 +84,15 @@
         <!-- GAS OVERRIDES -->
         <section class="panel">
           <div class="panel-header">
-            <span class="ph-icon">&diams;</span> [02] EIP-1559 Gas Optimization (Minimum Cost Mode)
+            <span class="ph-icon">&diams;</span> [02] Gas Pricing (Native Wallet Fee Picker)
           </div>
           <div class="panel-body">
-            <div class="grid-3">
-              <div class="input-group">
-                <label for="wm-gas-base">Base Fee (Gwei) <span class="sublabel">[0=Auto Live]</span></label>
-                <input type="number" id="wm-gas-base" value="0" min="0" step="0.01" placeholder="Auto">
-              </div>
-              <div class="input-group">
-                <label for="wm-gas-priority">Priority Tip (Gwei) <span class="sublabel">[0=Min 0.05]</span></label>
-                <input type="number" id="wm-gas-priority" value="0" min="0" step="0.01" placeholder="0.05">
-              </div>
-              <div class="input-group">
-                <label for="wm-gas-limit">Gas Limit</label>
-                <input type="number" id="wm-gas-limit" value="80000" min="21000" step="1000">
-              </div>
+            <div style="font-size:11px; color:var(--text); line-height:1.6; margin-bottom:12px;">
+              When you click execute below, <strong>MetaMask / your wallet popup will open its native fee selector</strong>. Choose <span class="code-green">"Low"</span> in your wallet for the minimum possible gas fee on Ethereum Mainnet.
             </div>
-            <div class="gas-status-strip">
+            <div class="gas-status-strip" style="border-top:1px solid var(--border); padding-top:10px;">
               <div class="gas-summary">
-                <span>Live Base: <strong id="wm-gr-base">--</strong> Gwei</span>
-                <span class="dot">&bull;</span>
-                <span>Min Tip: <strong id="wm-gr-priority">0.05</strong> Gwei</span>
+                <span>Live Base Fee: <strong id="wm-gr-base">--</strong> Gwei</span>
                 <span class="dot">&bull;</span>
                 <span class="gas-tag" id="wm-gas-status">Connecting...</span>
               </div>
@@ -201,7 +188,7 @@
       <!-- RPC & GAS CONFIG -->
       <section class="panel">
         <div class="panel-header">
-          <span class="ph-icon">&diams;</span> [01] Network RPC, Target Contract &amp; Minimum Gas Configuration
+          <span class="ph-icon">&diams;</span> [01] Network RPC &amp; Autonomous Minimum Gas Engine
         </div>
         <div class="panel-body">
           <div class="grid-2">
@@ -223,26 +210,13 @@
             </div>
           </div>
 
-          <div class="grid-3" style="margin-top:8px;">
-            <div class="input-group">
-              <label for="gas-base">Base Fee (Gwei) <span class="sublabel">[0=Auto Live]</span></label>
-              <input type="number" id="gas-base" value="0" min="0" step="0.01" placeholder="Auto">
-            </div>
-            <div class="input-group">
-              <label for="gas-priority">Priority Tip (Gwei) <span class="sublabel">[0=Min 0.05]</span></label>
-              <input type="number" id="gas-priority" value="0" min="0" step="0.01" placeholder="0.05">
-            </div>
-            <div class="input-group">
-              <label for="gas-limit">Gas Limit</label>
-              <input type="number" id="gas-limit" value="80000" min="21000" step="1000">
-            </div>
-          </div>
-
-          <div class="gas-status-strip">
+          <div class="gas-status-strip" style="margin-top:10px; background:rgba(0,255,102,0.03); border:1px solid var(--border); padding:10px 14px;">
             <div class="gas-summary">
               <span>Live Base: <strong id="gr-base">--</strong> Gwei</span>
               <span class="dot">&bull;</span>
-              <span>Min Tip: <strong id="gr-priority">0.05</strong> Gwei</span>
+              <span>Auto Min Tip: <strong id="gr-priority">0.05</strong> Gwei</span>
+              <span class="dot">&bull;</span>
+              <span>Est. Cost: <strong id="gr-est-cost" class="code-green">-- ETH</strong> / tx</span>
               <span class="dot">&bull;</span>
               <span class="gas-tag" id="gas-status">Connecting...</span>
             </div>
@@ -345,7 +319,7 @@
 
           <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
             <button type="button" id="btn-initiate" class="btn btn-primary" style="flex:2; min-width:220px; padding:12px 20px;">
-              INITIATE AUTONOMOUS BATCH SEQUENCE (FUNCTION #9)
+              INITIATE AUTONOMOUS BATCH SEQUENCE (FUNCTION #9 · MIN GAS)
             </button>
             <button type="button" id="btn-abort" class="btn btn-danger" style="flex:1; min-width:140px; padding:12px 20px;" disabled>
               EMERGENCY ABORT
