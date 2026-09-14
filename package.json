@@ -1,0 +1,22 @@
+{
+  "name": "batch-mint-dashboard",
+  "version": "1.0.0",
+  "description": "Zero-dependency brutalist dashboard for batch-minting ERC-721 tokens with unique GPG keys on Ethereum Mainnet.",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate-keys.js",
+    "dev": "npx serve . -p 3000 --no-clipboard",
+    "serve": "npx serve . -p 3000"
+  },
+  "dependencies": {
+    "ethers": "^6.17.0",
+    "openpgp": "^5.11.0"
+  },
+  "devDependencies": {
+    "serve": "^14.2.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Mint Engine // Ethereum Mainnet</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="header-left">
+        <h1>Batch Mint Engine <span style="font-size:13px; color:var(--amber); font-weight:normal;">v3.1</span></h1>
+        <div class="subtitle">// 100% Client-Side Ephemeral Execution &bull; Zero Server &bull; Zero Local Storage &bull; Lowest Gas Mode</div>
+      </div>
+      <div class="header-badges">
+        <span class="chain-badge">ETH MAINNET [ID: 1]</span>
+        <span class="contract-badge">
+          TARGET: <a href="https://etherscan.io/address/0x3286e6525A38cD1d277ECaF435b156c0cc892C29#writeContract#F9" target="_blank" rel="noopener noreferrer">0x3286...2C29 &nearr;</a>
+        </span>
+      </div>
+    </header>
+
+    <!-- TOP MODE SWITCH BAR -->
+    <div class="mode-bar">
+      <span class="mode-bar-label">Execution Mode:</span>
+      <div class="mode-toggle-group">
+        <button type="button" id="mode-btn-wallet" class="mode-btn active">
+          <span class="mode-icon">&block;</span> Option 1: Connect Wallet &amp; Mint
+        </button>
+        <button type="button" id="mode-btn-bulk" class="mode-btn">
+          <span class="mode-icon">&equiv;</span> Option 2: Bulk Burner Mint
+        </button>
+      </div>
+      <div class="mode-desc" id="mode-desc-text">Interactive single mint via MetaMask / Browser Wallet · Function #9 seen(string pgp)</div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- OPTION 1: WALLET CONNECT & MINT PANEL                               -->
+    <!-- =================================================================== -->
+    <div id="wallet-mode-wrap">
+
+      <!-- WALLET CONNECTION & ACCOUNT CARD -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="ph-icon">&diams;</span> [01] Browser Wallet Connection
+        </div>
+        <div class="panel-body">
+          <div class="wc-container">
+            <div class="wc-action-box">
+              <button type="button" id="btn-connect-wallet" class="btn btn-primary btn-connect">
+                CONNECT BROWSER WALLET (METAMASK / RABBY)
+              </button>
+              <button type="button" id="btn-disconnect-wallet" class="btn btn-danger" style="display:none;">
+                DISCONNECT WALLET
+              </button>
+              <button type="button" id="btn-switch-network" class="btn btn-amber" style="display:none;">
+                SWITCH TO ETHEREUM MAINNET
+              </button>
+            </div>
+
+            <div id="wc-info" class="wc-details-grid" style="display:none;">
+              <div class="wc-card">
+                <span class="wc-k">Connected Address</span>
+                <span id="wc-address" class="wc-v address">-</span>
+              </div>
+              <div class="wc-card">
+                <span class="wc-k">ETH Balance</span>
+                <span id="wc-balance" class="wc-v green">0.00000 ETH</span>
+              </div>
+              <div class="wc-card">
+                <span class="wc-k">Network / Chain</span>
+                <span id="wc-network" class="wc-v amber">Ethereum Mainnet (1)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAS & CONTRACT TARGET CONFIGURATION -->
+      <div class="grid-2">
+        <!-- GAS OVERRIDES -->
+        <section class="panel">
+          <div class="panel-header">
+            <span class="ph-icon">&diams;</span> [02] EIP-1559 Gas Optimization (Minimum Cost Mode)
+          </div>
+          <div class="panel-body">
+            <div class="grid-3">
+              <div class="input-group">
+                <label for="wm-gas-base">Base Fee (Gwei) <span class="sublabel">[0=Auto Live]</span></label>
+                <input type="number" id="wm-gas-base" value="0" min="0" step="0.01" placeholder="Auto">
+              </div>
+              <div class="input-group">
+                <label for="wm-gas-priority">Priority Tip (Gwei) <span class="sublabel">[0=Min 0.05]</span></label>
+                <input type="number" id="wm-gas-priority" value="0" min="0" step="0.01" placeholder="0.05">
+              </div>
+              <div class="input-group">
+                <label for="wm-gas-limit">Gas Limit</label>
+                <input type="number" id="wm-gas-limit" value="80000" min="21000" step="1000">
+              </div>
+            </div>
+            <div class="gas-status-strip">
+              <div class="gas-summary">
+                <span>Live Base: <strong id="wm-gr-base">--</strong> Gwei</span>
+                <span class="dot">&bull;</span>
+                <span>Min Tip: <strong id="wm-gr-priority">0.05</strong> Gwei</span>
+                <span class="dot">&bull;</span>
+                <span class="gas-tag" id="wm-gas-status">Connecting...</span>
+              </div>
+              <button type="button" id="wm-btn-fetch-gas" class="btn btn-tiny btn-muted" style="margin-left:auto;">REFRESH GAS</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONTRACT TARGET -->
+        <section class="panel">
+          <div class="panel-header">
+            <span class="ph-icon">&diams;</span> [03] Verified Smart Contract Target
+          </div>
+          <div class="panel-body">
+            <div class="contract-banner" style="margin-bottom:0;">
+              <div class="cb-row">
+                <span class="cb-label">Contract Address:</span>
+                <span class="cb-val"><a href="https://etherscan.io/address/0x3286e6525A38cD1d277ECaF435b156c0cc892C29#writeContract#F9" target="_blank" rel="noopener noreferrer">0x3286e6525A38cD1d277ECaF435b156c0cc892C29 &nearr;</a></span>
+              </div>
+              <div class="cb-row">
+                <span class="cb-label">Target Method:</span>
+                <span class="cb-val green" style="font-weight:700;">Function #9: seen(string pgp) [0x363355d2] (VERIFIED &amp; LOCKED)</span>
+              </div>
+              <div class="cb-row">
+                <span class="cb-label">ABI Definition:</span>
+                <span class="cb-val" style="color:var(--text-dim); font-size:10px;">function seen(string pgp) public</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- GPG KEY POOL & EXECUTE MINT -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="ph-icon">&diams;</span> [04] GPG Key Pool &amp; Mint Execution
+        </div>
+        <div class="panel-body">
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-label">Available Unused Keys</div>
+              <div class="stat-value" id="wm-gpg-avail">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Pool Size</div>
+              <div class="stat-value blue" id="wm-gpg-total">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Next Key ID In Queue</div>
+              <div class="stat-value amber" id="wm-gpg-next">None</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Key Pool Source</div>
+              <div class="stat-value green-sub" id="wm-gpg-source" style="font-size:11px; word-break:break-all;">Loading keys.json...</div>
+            </div>
+          </div>
+
+          <!-- NEXT KEY PREVIEW -->
+          <div class="next-key-preview">
+            <div class="preview-header">
+              <span>ACTIVE GPG PAYLOAD FOR NEXT TRANSACTION:</span>
+              <span class="preview-tag" id="preview-key-tag">NO UNUSED KEYS</span>
+            </div>
+            <div class="preview-content" id="preview-key-text">[ Loading keys.json from repository... ]</div>
+          </div>
+
+          <!-- DROP ZONE OVERRIDE -->
+          <div class="manual-override-box">
+            <div class="sub-heading">// MANUAL OVERRIDE (Optional: drag &amp; drop alternate keys.json file)</div>
+            <div class="drop-zone" id="wm-drop-zone">
+              <strong>Drag &amp; drop custom keys.json here, or click to browse</strong>
+              <span>Accepts JSON array containing [{ id, armoredKey }]</span>
+              <span class="file-name-tag" id="wm-drop-filename"></span>
+              <input type="file" id="wm-file-input" accept=".json" style="display:none;">
+            </div>
+          </div>
+
+          <!-- MINT BUTTON & RESULT -->
+          <button type="button" id="btn-single-mint" class="btn btn-primary btn-large" disabled>
+            EXECUTE TRANSACTION WITH CONNECTED WALLET (FUNCTION #9 · 1 GPG KEY)
+          </button>
+          <div id="wm-mint-result" class="mint-result-box" style="display:none;"></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- OPTION 2: BULK BURNER WALLET MINT PANEL                             -->
+    <!-- =================================================================== -->
+    <div id="bulk-mode-wrap" style="display:none;">
+
+      <!-- RPC & GAS CONFIG -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="ph-icon">&diams;</span> [01] Network RPC, Target Contract &amp; Minimum Gas Configuration
+        </div>
+        <div class="panel-body">
+          <div class="grid-2">
+            <div class="input-group">
+              <label for="rpc-url">Ethereum RPC Endpoint <span class="sublabel">[Direct JSON-RPC]</span></label>
+              <input type="url" id="rpc-url" value="https://ethereum-rpc.publicnode.com" placeholder="https://ethereum-rpc.publicnode.com">
+            </div>
+            <div class="grid-2">
+              <div class="input-group">
+                <label>Target Method</label>
+                <div style="padding:8px 10px; background:var(--bg); border:1px solid var(--border); color:var(--green); font-size:11px; font-weight:700;">
+                  #9 seen(string pgp) [0x363355d2]
+                </div>
+              </div>
+              <div class="input-group">
+                <label for="tx-delay">Delay Between TXs (ms)</label>
+                <input type="number" id="tx-delay" value="2000" min="0" step="500">
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-3" style="margin-top:8px;">
+            <div class="input-group">
+              <label for="gas-base">Base Fee (Gwei) <span class="sublabel">[0=Auto Live]</span></label>
+              <input type="number" id="gas-base" value="0" min="0" step="0.01" placeholder="Auto">
+            </div>
+            <div class="input-group">
+              <label for="gas-priority">Priority Tip (Gwei) <span class="sublabel">[0=Min 0.05]</span></label>
+              <input type="number" id="gas-priority" value="0" min="0" step="0.01" placeholder="0.05">
+            </div>
+            <div class="input-group">
+              <label for="gas-limit">Gas Limit</label>
+              <input type="number" id="gas-limit" value="80000" min="21000" step="1000">
+            </div>
+          </div>
+
+          <div class="gas-status-strip">
+            <div class="gas-summary">
+              <span>Live Base: <strong id="gr-base">--</strong> Gwei</span>
+              <span class="dot">&bull;</span>
+              <span>Min Tip: <strong id="gr-priority">0.05</strong> Gwei</span>
+              <span class="dot">&bull;</span>
+              <span class="gas-tag" id="gas-status">Connecting...</span>
+            </div>
+            <button type="button" id="btn-fetch-gas" class="btn btn-tiny btn-muted" style="margin-left:auto;">REFRESH GAS</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- WALLETS & GPG KEYS INPUT -->
+      <div class="grid-2">
+        <!-- PRIVATE KEYS -->
+        <section class="panel">
+          <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <span><span class="ph-icon">&diams;</span> [02] Burner Private Keys (<span id="wallet-count">0</span> Loaded)</span>
+            <button type="button" id="btn-clear-pks" class="btn btn-tiny btn-muted" style="font-size:9px; padding:2px 6px;">CLEAR KEYS</button>
+          </div>
+          <div class="panel-body">
+            <div class="input-group">
+              <label for="pk-input">Enter 0x-Prefixed Private Keys (One Per Line)</label>
+              <textarea id="pk-input" rows="8" placeholder="0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&#10;0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789" spellcheck="false" autocomplete="off"></textarea>
+            </div>
+            <div class="field-hint">
+              &bull; Keys are stored purely in transient memory &bull; Never sent to any server &bull; Cleared immediately after signing
+            </div>
+          </div>
+        </section>
+
+        <!-- GPG KEYS IN BULK MODE -->
+        <section class="panel">
+          <div class="panel-header">
+            <span class="ph-icon">&diams;</span> [03] GPG Key Pool
+          </div>
+          <div class="panel-body">
+            <div class="gpg-stat-panel" style="margin-bottom:12px;">
+              <div class="gsp-row">
+                <span class="gsp-lbl">Available Unused:</span>
+                <span class="gsp-val val-green" id="gpg-count">0</span>
+              </div>
+              <div class="gsp-row">
+                <span class="gsp-lbl">Total Keys Loaded:</span>
+                <span class="gsp-val amber" id="wpg-total">0</span>
+              </div>
+              <div class="gsp-row">
+                <span class="gsp-lbl">Active Source:</span>
+                <span class="gsp-val blue" id="gpg-source">Loading keys.json...</span>
+              </div>
+            </div>
+
+            <div class="drop-zone" id="gpg-drop-zone" style="margin-bottom:10px;">
+              <strong>Drag &amp; drop keys.json file</strong>
+              <span>or click to browse local file</span>
+              <span class="file-name-tag" id="drop-filename"></span>
+              <input type="file" id="gpg-file-input" accept=".json" style="display:none;">
+            </div>
+
+            <div class="input-group" style="margin-bottom:0;">
+              <label for="gpg-paste-input">Or Paste JSON Array</label>
+              <textarea id="gpg-paste-input" rows="2" placeholder='[{"id":1,"armoredKey":"-----BEGIN PGP PUBLIC KEY BLOCK-----..."}]' spellcheck="false"></textarea>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- EXECUTION CONTROLS & STATS -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="ph-icon">&diams;</span> [04] Batch Sequence Control
+        </div>
+        <div class="panel-body">
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-label">Wallets In Queue</div>
+              <div class="stat-value" id="stat-wallets">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">GPG Keys Available</div>
+              <div class="stat-value blue" id="stat-gpg">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Base Gas (Gwei)</div>
+              <div class="stat-value amber" id="stat-gas">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Batch Progress</div>
+              <div class="stat-value" id="stat-progress">0 / 0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Succeeded</div>
+              <div class="stat-value" id="stat-success">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Failed / Skipped</div>
+              <div class="stat-value red" id="stat-failed">0</div>
+            </div>
+          </div>
+
+          <div class="progress-wrap">
+            <div id="progress-bar"></div>
+          </div>
+
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <button type="button" id="btn-initiate" class="btn btn-primary" style="flex:2; min-width:220px; padding:12px 20px;">
+              INITIATE AUTONOMOUS BATCH SEQUENCE (FUNCTION #9)
+            </button>
+            <button type="button" id="btn-abort" class="btn btn-danger" style="flex:1; min-width:140px; padding:12px 20px;" disabled>
+              EMERGENCY ABORT
+            </button>
+          </div>
+          <div id="abort-notice" class="abort-notice" style="display:none;">
+            &#9888; BATCH EXECUTION STOPPED BY OPERATOR
+          </div>
+        </div>
+      </section>
+
+      <!-- EXECUTION LOG TABLE -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="ph-icon">&diams;</span> [05] Live Batch Execution Table
+        </div>
+        <div class="panel-body">
+          <div class="table-wrapper">
+            <table class="exec-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Wallet Address</th>
+                  <th>Balance</th>
+                  <th>GPG Key</th>
+                  <th>Transaction Hash</th>
+                  <th>Block</th>
+                  <th>Gas Used</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="exec-tbody">
+                <tr class="empty-row"><td colspan="8">- No transactions executed yet -</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="export-row" style="margin-top:14px;">
+            <button type="button" id="btn-export-keys" class="btn btn-tiny btn-muted">EXPORT UPDATED KEYS.JSON</button>
+            <button type="button" id="btn-export-csv" class="btn btn-tiny btn-muted">EXPORT RUN LOG (CSV)</button>
+            <button type="button" id="btn-clear-table" class="btn btn-tiny btn-muted" style="margin-left:auto;">CLEAR TABLE</button>
+          </div>
+          <div class="export-note">
+            &bull; <span class="code-amber">EXPORT UPDATED KEYS.JSON</span> saves a copy with used keys marked so you can commit back to Git without duplicate submissions.
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- LIVE CONSOLE LOG (ALWAYS VISIBLE FOR BOTH MODES)                   -->
+    <!-- =================================================================== -->
+    <section class="panel" style="margin-top:20px;">
+      <div class="panel-header">
+        <span class="ph-icon">&diams;</span> System &amp; Transaction Console Log
+      </div>
+      <div class="panel-body" style="padding:0;">
+        <div id="console-log"></div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div>ETHEREUM MAINNET BATCH MINT DASHBOARD &bull; ZERO SERVER &bull; 100% EPHEMERAL IN-MEMORY TRANSACTIONS &bull; FUNCTION #9 LOCKED</div>
+    </footer>
+
+  </div>
+
+  <!-- VENDOR & APPLICATION SCRIPTS -->
+  <script src="vendor/ethers.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
