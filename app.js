@@ -34,7 +34,7 @@
   const STORAGE_KEY_ADMIN     = 'they_seen_admin_v4';
 
   const MIN_SAFE_PRIORITY_GWEI = '0.05';
-  const DEFAULT_GAS_LIMIT      = 80000n;
+  const DEFAULT_GAS_LIMIT      = 220000n;
 
   // ── STATE VARIABLES ─────────────────────────────────────────────────────────
   let gpgKeyPool       = [];
@@ -914,7 +914,7 @@
         if (elStatGas) elStatGas.textContent = baseGwei;
 
         const totalGweiPerTx = (parseFloat(baseGwei) + parseFloat(prioGwei));
-        const estEthPerTx = (65000 * totalGweiPerTx / 1e9).toFixed(6);
+        const estEthPerTx = (165000 * totalGweiPerTx / 1e9).toFixed(6);
         if (elGrEstCost) elGrEstCost.textContent = '~' + estEthPerTx + ' ETH';
       }
     } catch (err) {
@@ -1080,8 +1080,18 @@
       log('PGP Payload Size: ' + chosenKey.armoredKey.length + ' bytes | Key ID: #' + chosenKey.id + ' (' + (chosenKey.email || 'Custom') + ')', 'info');
 
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, connectedSigner);
+      
+      let gasLimit = DEFAULT_GAS_LIMIT;
+      try {
+        const estimated = await contract.seen.estimateGas(chosenKey.armoredKey);
+        gasLimit = (estimated * 125n) / 100n; // 25% safety buffer
+        log('Dynamic Gas Estimation: ' + estimated.toString() + ' (Safe Limit with 25% buffer: ' + gasLimit.toString() + ')', 'info');
+      } catch (estErr) {
+        log('Gas estimation notice: using default safe limit ' + gasLimit.toString(), 'info');
+      }
+
       const tx = await contract.seen(chosenKey.armoredKey, {
-        gasLimit: DEFAULT_GAS_LIMIT
+        gasLimit: gasLimit
       });
 
       log('Transaction Broadcasted! TX: ' + tx.hash, 'tx');
@@ -1353,10 +1363,19 @@
         const maxFee = base + tip;
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
+        
+        let gasLimit = DEFAULT_GAS_LIMIT;
+        try {
+          const estimated = await contract.seen.estimateGas(gpgKey.armoredKey);
+          gasLimit = (estimated * 125n) / 100n; // 25% safety buffer
+        } catch (estErr) {
+          gasLimit = DEFAULT_GAS_LIMIT;
+        }
+
         const tx = await contract.seen(gpgKey.armoredKey, {
           maxPriorityFeePerGas: tip,
           maxFeePerGas: maxFee,
-          gasLimit: DEFAULT_GAS_LIMIT
+          gasLimit: gasLimit
         });
 
         log('[' + currNum + '/' + total + '] TX sent: ' + tx.hash, 'tx');
