@@ -46,14 +46,14 @@
   let isBatchRunning   = false;
   let isGeneratingKeys = false;
   let activeMode       = 'wallet';
-  let walletKeySource  = 'pool';
+  let walletKeySource  = 'generate'; // Default to fresh generator
 
   let browserProvider  = null;
   let connectedSigner  = null;
   let connectedAddress = null;
 
-  let selectedModalKey = null;
-  let quickGeneratedKey= null;
+  let selectedModalKey  = null;
+  let quickGeneratedKey = null;
 
   // ── DOM SELECTOR HELPER ─────────────────────────────────────────────────────
   const $ = function(id) { return document.getElementById(id); };
@@ -63,14 +63,15 @@
   let elWalletWrap, elBulkWrap, elVaultWrap, elAdminWrap;
   let elBtnConnect, elBtnDisconnect, elBtnSwitchNetwork, elWcInfo, elWcAddress, elWcBalance, elWcNetwork;
   let elWmBtnFetchGas, elWmGrBase, elWmGasStatus;
-  let elWmTabPool, elWmTabGenerate, elWmTabCustom, elWmPoolStatsRow, elWmGenerateCard, elWmCustomCard, elWmCustomTextarea, elWmBtnQuickGen;
+  let elWmTabPool, elWmTabGenerate, elWmTabCustom, elWmPoolStatsRow, elWmGenerateCard, elWmCustomCard, elWmCustomTextarea;
+  let elWmGenModeRandom, elWmGenModeCustom, elWmCustomIdFields, elWmGenName, elWmGenEmail, elWmBtnQuickGen, elWmBtnDownloadActive, elWmGenStatus;
   let elWmGpgAvail, elWmGpgTotal, elWmGpgNext, elWmGpgSource, elPreviewKeyTag, elPreviewVaultTag, elPreviewKeyText;
   let elBtnSingleMint, elWmMintResult, elWmBtnExportKeys, elWmBtnDownloadVault;
   let elRpcUrl, elTxDelay, elBtnFetchGas, elGrBase, elGrPriority, elGrEstCost, elGasStatus;
-  let elPkInput, elBtnClearPks, elWalletCount, elGpgCount, elGpgTotal, elGpgSource, elGpgDropZone, elGpgFileInput, elDropFilename, elGpgPasteInput;
+  let elPkInput, elBtnClearPks, elWalletCount, elGpgCount, elGpgTotal, elGpgSource, elBtnGotoVaultGen, elGpgDropZone, elGpgFileInput, elDropFilename, elGpgPasteInput;
   let elStatWallets, elStatGpg, elStatGas, elStatProgress, elStatSuccess, elStatFailed, elProgressBar, elBtnInitiate, elBtnAbort, elAbortNotice, elExecTbody;
   let elBtnExportKeys, elBtnExportCsv, elBtnExportBulkVault, elBtnClearTable;
-  let elGenCount, elGenStyle, elGenTimeShuffle, elBtnRunGenerator, elGenProgressBox, elGenProgressLabel, elGenProgressNum, elGenProgressBar;
+  let elGenCount, elGenStyle, elGenTimeShuffle, elGenCustomIdFields, elGenCustomName, elGenCustomEmail, elBtnRunGenerator, elGenProgressBox, elGenProgressLabel, elGenProgressNum, elGenProgressBar;
   let elVaultStatTotal, elVaultStatTriads, elVaultStatUnused, elVaultStatMapped, elVaultBadgeTotal;
   let elBtnMasterDownloadTxt, elBtnMasterDownloadJson;
   let elBtnDownloadUnusedJson, elBtnImportVault, elFileImportVault, elBtnClearVault, elVaultSearchInput, elVaultFilteredCount, elVaultKeysContainer;
@@ -84,20 +85,23 @@
     'Alexander', 'Sophia', 'Marcus', 'Elena', 'Liam', 'Olivia', 'Ethan', 'Isabella',
     'Lucas', 'Mia', 'Noah', 'Emma', 'Oliver', 'Ava', 'Mateo', 'Camila', 'Sebastian',
     'Aria', 'Julian', 'Chloe', 'Nathan', 'Priya', 'Leo', 'Zoe', 'Gabriel', 'Hannah',
-    'Daniel', 'Leila', 'Henry', 'Nora', 'Elijah', 'Mila', 'Samuel', 'Maya', 'Benjamin'
+    'Daniel', 'Leila', 'Henry', 'Nora', 'Elijah', 'Mila', 'Samuel', 'Maya', 'Benjamin',
+    'Bhavik', 'Aarav', 'Dmitri', 'Kaelen', 'Freja', 'Siddharth', 'Yuki', 'Seraphina'
   ];
 
   const LAST_NAMES = [
     'Vance', 'Rostova', 'Chen', 'Morales', 'Dubois', 'Sterling', 'Novak', 'Tanaka',
     'Lindqvist', 'Mercer', 'Kowalski', 'Sinclair', 'Hartmann', 'Nakamura', 'Moreau',
     'Fischer', 'Gomez', 'Weber', 'Becker', 'Hoffmann', 'Schulz', 'Wagner', 'Ricci',
-    'Marino', 'Costa', 'Santos', 'Silva', 'Ferreira', 'Alvarez', 'Romero', 'Torres'
+    'Marino', 'Costa', 'Santos', 'Silva', 'Ferreira', 'Alvarez', 'Romero', 'Torres',
+    'Patel', 'Sharma', 'Volkov', 'Lindstrom', 'Takahashi', 'Verdi'
   ];
 
   const DOMAINS_PUBLIC = [
-    'gmail.com', 'outlook.com', 'proton.me', 'pm.me', 'icloud.com', 'yahoo.com', 'zoho.com',
-    'mailfence.com', 'tuta.io', 'fastmail.com', 'mailbox.org', 'posteo.de', 'gmx.com',
-    'devmail.io', 'coder.net', 'bytehub.org', 'techflow.io', 'sysops.dev', 'cloudnative.cc'
+    'proton.me', 'pm.me', 'gmail.com', 'outlook.com', 'icloud.com', 'fastmail.com',
+    'mailbox.org', 'tuta.io', 'mailfence.com', 'zoho.com', 'posteo.de', 'gmx.com',
+    'devmail.io', 'coder.net', 'bytehub.org', 'techflow.io', 'sysops.dev', 'cloudnative.cc',
+    'nodeworks.io', 'sovereign.id'
   ];
 
   // ── UTILITIES ───────────────────────────────────────────────────────────────
@@ -144,7 +148,49 @@
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  function buildIdentity(style) {
+  /**
+   * Generates identity object with name and email based on style or custom parameters.
+   */
+  function buildIdentity(style, customName, customEmail, index, total) {
+    index = index || 0;
+    total = total || 1;
+
+    // 1. Custom / Self-Authentic Identity
+    if (style === 'custom') {
+      let finalName = (customName || '').trim();
+      let finalEmail = (customEmail || '').trim();
+
+      if (finalName && !finalEmail) {
+        const handle = finalName.toLowerCase().replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.');
+        const dom = randomItem(DOMAINS_PUBLIC);
+        finalEmail = (total > 1 && index > 0) ? (handle + '+' + (index + 1) + '@' + dom) : (handle + '@' + dom);
+      } else if (!finalName && finalEmail) {
+        const parts = finalEmail.split('@');
+        const handle = parts[0] || 'User';
+        const cleanName = handle.replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }).trim();
+        finalName = (total > 1 && index > 0) ? (cleanName + ' ' + (index + 1)) : cleanName;
+      } else if (finalName && finalEmail) {
+        if (total > 1 && index > 0) {
+          finalName = finalName + ' ' + (index + 1);
+          if (finalEmail.includes('@')) {
+            const parts = finalEmail.split('@');
+            finalEmail = parts[0] + '+' + (index + 1) + '@' + parts[1];
+          } else {
+            finalEmail = finalEmail + '+' + (index + 1) + '@nodeworks.io';
+          }
+        }
+      } else {
+        // Both blank, generate realistic
+        return buildIdentity('realistic');
+      }
+
+      return {
+        name: finalName,
+        email: finalEmail
+      };
+    }
+
+    // 2. Anonymous Style
     if (style === 'anon') {
       const hex = Math.random().toString(16).substring(2, 10).toUpperCase();
       return {
@@ -152,16 +198,32 @@
         email: 'anon_' + hex.toLowerCase() + '@vault.local'
       };
     }
+
+    // 3. Developer / SysAdmin Style
+    if (style === 'dev') {
+      const fn = randomItem(FIRST_NAMES);
+      const ln = randomItem(LAST_NAMES);
+      const devDomains = ['sysops.dev', 'cloudnative.cc', 'coder.net', 'bytehub.org', 'techflow.io', 'nodeworks.io'];
+      const dom = randomItem(devDomains);
+      const handle = fn.toLowerCase().charAt(0) + ln.toLowerCase();
+      return {
+        name: fn + ' ' + ln + ' (Dev)',
+        email: handle + '@' + dom
+      };
+    }
+
+    // 4. Realistic Names & Diverse Domains (Default)
     const fn = randomItem(FIRST_NAMES);
     const ln = randomItem(LAST_NAMES);
     const dom = randomItem(DOMAINS_PUBLIC);
     const fLower = fn.toLowerCase();
     const lLower = ln.toLowerCase();
-    const p = randomNum(1, 6);
+    const p = randomNum(1, 5);
     let userHandle = fLower + '.' + lLower;
     if (p === 2) userHandle = fLower.charAt(0) + lLower;
     else if (p === 3) userHandle = fLower + '_' + lLower;
-    else if (p === 4) userHandle = fLower + '.' + lLower + randomNum(78, 99);
+    else if (p === 4) userHandle = fLower + '.' + lLower + randomNum(11, 99);
+
     return {
       name: fn + ' ' + ln,
       email: userHandle + '@' + dom
@@ -218,6 +280,18 @@
   // ── LOCAL STORAGE PERSISTENCE ───────────────────────────────────────────────
   function loadPersistedState() {
     try {
+      const rawVault = localStorage.getItem(STORAGE_KEY_VAULT);
+      if (rawVault) {
+        const arr = JSON.parse(rawVault);
+        if (Array.isArray(arr) && arr.length > 0) {
+          keyVault = arr;
+          gpgKeyPool = arr.slice();
+          log('Restored ' + arr.length + ' cryptographic keypairs from in-browser Vault.', 'info');
+        }
+      }
+    } catch (_) {}
+
+    try {
       const rawUsed = localStorage.getItem(STORAGE_KEY_USED);
       if (rawUsed) {
         const arr = JSON.parse(rawUsed);
@@ -235,6 +309,12 @@
           adminRegistry = arr;
         }
       }
+    } catch (_) {}
+  }
+
+  function persistVault() {
+    try {
+      localStorage.setItem(STORAGE_KEY_VAULT, JSON.stringify(keyVault));
     } catch (_) {}
   }
 
@@ -279,11 +359,13 @@
     if (elAdminWrap)  elAdminWrap.style.display  = mode === 'admin'  ? 'block' : 'none';
 
     if (mode === 'wallet') {
-      if (elModeDescText) elModeDescText.textContent = 'Option 1: Interactive single mint via MetaMask / Browser Wallet (native gas selector)';
+      if (elModeDescText) elModeDescText.textContent = 'Option 1: Interactive single mint via MetaMask / Browser Wallet · Function #9 seen(string pgp)';
       fetchWalletGas();
+      updateWalletModeUi();
     } else if (mode === 'bulk') {
       if (elModeDescText) elModeDescText.textContent = 'Option 2: Automated sequential batch loop over burner private keys (autonomous min gas)';
       fetchBulkGas();
+      updateGpgUi('In-Browser Cryptographic Vault');
     } else if (mode === 'vault') {
       if (elModeDescText) elModeDescText.textContent = 'Option 3: Cryptographic Key Generator & Closed-System Vault (Public, Private, Revocation Triads)';
       renderVaultUi();
@@ -337,6 +419,7 @@
       persistUsedKeyId(keyEntry.id);
     }
 
+    persistVault();
     updateVaultCounters();
   }
 
@@ -351,6 +434,9 @@
     if (elVaultStatUnused) elVaultStatUnused.textContent = unused;
     if (elVaultStatMapped) elVaultStatMapped.textContent = mapped;
     if (elVaultBadgeTotal) elVaultBadgeTotal.textContent = total + ' Keypairs Stored';
+
+    const wmAvailCount = $('wm-vault-avail-count');
+    if (wmAvailCount) wmAvailCount.textContent = unused;
   }
 
   function parseGpgJson(raw) {
@@ -369,7 +455,7 @@
   }
 
   function loadGpgKeys(keys, sourceName) {
-    sourceName = sourceName || 'keys.json';
+    sourceName = sourceName || 'Vault Import';
     keys.forEach(function(curr, idx) {
       const id = curr.id !== undefined ? curr.id : (idx + 1);
       const isUsed = !!curr.used || usedKeyIdsSet.has(Number(id));
@@ -386,7 +472,7 @@
         txHash: curr.txHash || null,
         tokenId: curr.tokenId || null,
         createdAt: curr.createdAt || new Date().toISOString(),
-        mode: curr.mode || 'preloaded'
+        mode: curr.mode || 'imported'
       };
       addToVault(item);
     });
@@ -396,8 +482,6 @@
     renderAdminUi();
     const unused = getUnusedGpgKeys().length;
     log('Loaded ' + keys.length + ' GPG keys from ' + sourceName + ' (' + unused + ' unused).', 'success');
-
-    verifyNextKeyCandidate();
   }
 
   function getUnusedGpgKeys() {
@@ -406,20 +490,6 @@
 
   function getNextUnusedKey() {
     return gpgKeyPool.find(function(k) { return !k.used && !usedKeyIdsSet.has(k.id) && !k.inProgress; }) || null;
-  }
-
-  async function verifyNextKeyCandidate() {
-    const next = getNextUnusedKey();
-    if (!next) return;
-
-    const isUsedOnChain = await checkKeyUsedOnChain(next.armoredKey);
-    if (isUsedOnChain) {
-      log('Key #' + next.id + ' (' + next.email + ') is already used on-chain (clavisUsed = true). Auto-advancing...', 'warn');
-      next.used = true;
-      persistUsedKeyId(next.id);
-      updateGpgUi();
-      verifyNextKeyCandidate();
-    }
   }
 
   function updateGpgUi(sourceName) {
@@ -432,9 +502,36 @@
     if (elWmGpgNext)  elWmGpgNext.textContent  = next ? ('#' + next.id) : 'None';
     if (elWmGpgSource && sourceName) elWmGpgSource.textContent = sourceName;
 
-    if (walletKeySource === 'pool') {
+    if (elGpgCount)  elGpgCount.textContent = unused;
+    if (elGpgTotal)  elGpgTotal.textContent = total;
+    if (elStatGpg)   elStatGpg.textContent  = unused;
+    if (elGpgSource && sourceName) elGpgSource.textContent = sourceName;
+
+    updateVaultCounters();
+  }
+
+  function updateWalletModeUi() {
+    if (walletKeySource === 'generate') {
+      if (quickGeneratedKey) {
+        if (elPreviewKeyTag) elPreviewKeyTag.textContent = '⚡ FRESH KEY #' + quickGeneratedKey.id + (quickGeneratedKey.email ? ' (' + quickGeneratedKey.email + ')' : '');
+        if (elPreviewKeyText) elPreviewKeyText.textContent = quickGeneratedKey.armoredKey;
+        if (elPreviewVaultTag) {
+          elPreviewVaultTag.style.display = 'inline-block';
+          elPreviewVaultTag.textContent = '✓ TRIAD IN VAULT';
+        }
+        if (elWmBtnDownloadActive) elWmBtnDownloadActive.disabled = false;
+        if (connectedSigner && elBtnSingleMint) elBtnSingleMint.disabled = false;
+      } else {
+        if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'READY TO GENERATE';
+        if (elPreviewKeyText) elPreviewKeyText.textContent = '[ Click "GENERATE NEW KEYPAIR NOW" above to create your fresh cryptographic triad ]';
+        if (elPreviewVaultTag) elPreviewVaultTag.style.display = 'none';
+        if (elWmBtnDownloadActive) elWmBtnDownloadActive.disabled = true;
+        if (elBtnSingleMint) elBtnSingleMint.disabled = true;
+      }
+    } else if (walletKeySource === 'pool') {
+      const next = getNextUnusedKey();
       if (next) {
-        if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'KEY #' + next.id + (next.email ? ' (' + next.email + ')' : '');
+        if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'VAULT KEY #' + next.id + (next.email ? ' (' + next.email + ')' : '');
         if (elPreviewKeyText) elPreviewKeyText.textContent = next.armoredKey;
         const hasTriad = !!next.privateKey && !!next.revocationCertificate;
         if (elPreviewVaultTag) {
@@ -443,45 +540,33 @@
         }
         if (connectedSigner && elBtnSingleMint) elBtnSingleMint.disabled = false;
       } else {
-        if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'NO UNUSED KEYS';
-        if (elPreviewKeyText) elPreviewKeyText.textContent = total > 0 ? '[ All loaded GPG keys have been marked used. Generate more in Option 3! ]' : '[ No keys loaded. ]';
+        if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'NO UNUSED VAULT KEYS';
+        if (elPreviewKeyText) elPreviewKeyText.textContent = '[ No unused keys in vault. Click Tab [1] to generate fresh keys or Tab [2] to paste! ]';
         if (elPreviewVaultTag) elPreviewVaultTag.style.display = 'none';
         if (elBtnSingleMint) elBtnSingleMint.disabled = true;
       }
-    }
-
-    if (elGpgCount)  elGpgCount.textContent = unused;
-    if (elGpgTotal)  elGpgTotal.textContent = total;
-    if (elStatGpg)   elStatGpg.textContent  = unused;
-    if (elGpgSource && sourceName) elGpgSource.textContent = sourceName;
-    updateVaultCounters();
-  }
-
-  async function autoLoadKeys() {
-    loadPersistedState();
-    try {
-      log('Auto-loading keys.json from local repository...', 'info');
-      const resp = await fetch('./keys.json');
-      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
-      const data = await resp.json();
-      const parsed = parseGpgJson(data);
-      if (parsed) {
-        loadGpgKeys(parsed, 'keys.json (Git / Local)');
+    } else if (walletKeySource === 'custom') {
+      const txt = elWmCustomTextarea ? elWmCustomTextarea.value.trim() : '';
+      if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'CUSTOM PASTED KEY';
+      if (elPreviewVaultTag) elPreviewVaultTag.style.display = 'none';
+      if (elPreviewKeyText) elPreviewKeyText.textContent = txt || '[ Please paste armored PGP key block above ]';
+      if (connectedSigner && txt.includes('-----BEGIN PGP PUBLIC KEY BLOCK-----')) {
+        if (elBtnSingleMint) elBtnSingleMint.disabled = false;
+      } else {
+        if (elBtnSingleMint) elBtnSingleMint.disabled = true;
       }
-    } catch (err) {
-      log('keys.json note: ' + err.message + '. Ready for in-browser generator.', 'warn');
-      if (elWmGpgSource) elWmGpgSource.textContent = 'Not found (Use In-Browser Generator)';
-      if (elGpgSource) elGpgSource.textContent = 'Not found (Use In-Browser Generator)';
-      updateGpgUi();
     }
   }
 
-  // ── BATCH IN-BROWSER KEY GENERATOR ──────────────────────────────────────────
+  // ── BATCH IN-BROWSER KEY GENERATOR (OPTION 3) ───────────────────────────────
   async function runBatchGenerator() {
     if (isGeneratingKeys) return;
     const count = parseInt(elGenCount ? elGenCount.value : '10', 10) || 10;
     const style = elGenStyle ? elGenStyle.value : 'realistic';
     const shuffle = elGenTimeShuffle ? (elGenTimeShuffle.value === 'shuffle') : true;
+
+    const customName = elGenCustomName ? elGenCustomName.value.trim() : '';
+    const customEmail = elGenCustomEmail ? elGenCustomEmail.value.trim() : '';
 
     isGeneratingKeys = true;
     if (elBtnRunGenerator) elBtnRunGenerator.disabled = true;
@@ -494,9 +579,10 @@
     const startT = Date.now();
 
     for (let i = 0; i < count; i++) {
-      const identity = buildIdentity(style);
+      const identity = buildIdentity(style, customName, customEmail, i, count);
       const keyDate = getRandomDate(shuffle);
       const currNum = i + 1;
+
       if (elGenProgressLabel) elGenProgressLabel.textContent = 'Generating key for ' + identity.name + ' <' + identity.email + '>...';
       if (elGenProgressNum) elGenProgressNum.textContent = currNum + ' / ' + count;
       if (elGenProgressBar) elGenProgressBar.style.width = ((currNum / count) * 100).toFixed(1) + '%';
@@ -515,13 +601,14 @@
           usedByAddress: null,
           txHash: null,
           tokenId: null,
-          mode: 'generated'
+          mode: 'batch-generated'
         };
         addToVault(newEntry);
       } catch (err) {
         log('Error generating key #' + currNum + ': ' + err.message, 'error');
       }
 
+      // Small yield to keep UI responsive
       await new Promise(function(r) { setTimeout(r, 10); });
     }
 
@@ -531,7 +618,7 @@
     if (elGenProgressLabel) elGenProgressLabel.textContent = '✓ ' + count + ' Keypairs generated successfully in ' + elapsed + 's!';
     log('Successfully created ' + count + ' cryptographic keypairs in ' + elapsed + 's. Added to Vault.', 'success');
 
-    updateGpgUi('In-Browser Vault Generator');
+    updateGpgUi('In-Browser Cryptographic Vault');
     renderVaultUi();
   }
 
@@ -858,7 +945,11 @@
       if (elBtnSingleMint) elBtnSingleMint.disabled = false;
       log('Connected wallet: ' + connectedAddress + ' (' + parseFloat(balEth).toFixed(5) + ' ETH)', 'success');
       fetchWalletGas();
-      verifyNextKeyCandidate();
+      updateWalletModeUi();
+
+      if (walletKeySource === 'generate' && !quickGeneratedKey) {
+        await runSingleWalletGenerator(false);
+      }
     } catch (err) {
       log('Wallet connection failed: ' + sanitizeError(err), 'error');
       if (elBtnConnect) {
@@ -904,27 +995,27 @@
 
     let chosenKey = null;
 
-    if (walletKeySource === 'pool') {
+    if (walletKeySource === 'generate') {
+      if (!quickGeneratedKey) {
+        await runSingleWalletGenerator(true);
+      }
+      chosenKey = quickGeneratedKey;
+    } else if (walletKeySource === 'pool') {
       chosenKey = getNextUnusedKey();
       if (!chosenKey) {
-        alert('No unused GPG keys available in pool. Generate one with the generator tab or load keys.json.');
+        alert('No unused GPG keys available in vault. Generate one with Tab [1] or Option 3.');
         return;
       }
       const isUsed = await checkKeyUsedOnChain(chosenKey.armoredKey);
       if (isUsed) {
-        log('Active key #' + chosenKey.id + ' is already used on-chain! Skipping...', 'warn');
+        log('Vault key #' + chosenKey.id + ' is already used on-chain! Skipping...', 'warn');
         chosenKey.used = true;
         persistUsedKeyId(chosenKey.id);
-        updateGpgUi();
+        updateGpgUi('In-Browser Cryptographic Vault');
+        updateWalletModeUi();
         executeSingleMint();
         return;
       }
-    } else if (walletKeySource === 'generate') {
-      if (!quickGeneratedKey) {
-        alert('Please click "GENERATE NEW KEYPAIR NOW" first.');
-        return;
-      }
-      chosenKey = quickGeneratedKey;
     } else if (walletKeySource === 'custom') {
       const customTxt = elWmCustomTextarea ? elWmCustomTextarea.value.trim() : '';
       if (!customTxt || !customTxt.includes('-----BEGIN PGP PUBLIC KEY BLOCK-----')) {
@@ -933,7 +1024,7 @@
       }
       chosenKey = {
         id: keyVault.length + 1,
-        name: 'Custom User Key',
+        name: 'Custom Pasted Key',
         email: 'custom@user.local',
         armoredKey: customTxt,
         privateKey: '',
@@ -944,13 +1035,18 @@
       addToVault(chosenKey);
     }
 
+    if (!chosenKey) {
+      alert('No key available to mint.');
+      return;
+    }
+
     try {
       elBtnSingleMint.disabled = true;
       elBtnSingleMint.textContent = 'CONFIRM TRANSACTION IN YOUR WALLET...';
       if (elWmMintResult) elWmMintResult.style.display = 'none';
 
       log('Preparing Function #9 seen(string pgp) transaction for ' + connectedAddress + '...', 'info');
-      log('PGP Payload Size: ' + chosenKey.armoredKey.length + ' bytes | Key ID: #' + chosenKey.id, 'info');
+      log('PGP Payload Size: ' + chosenKey.armoredKey.length + ' bytes | Key ID: #' + chosenKey.id + ' (' + (chosenKey.email || 'Custom') + ')', 'info');
 
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, connectedSigner);
       const tx = await contract.seen(chosenKey.armoredKey, {
@@ -1000,16 +1096,20 @@
         gasUsed: gasUsed,
         tokenId: tokenId,
         mode: 'wallet',
-        status: 'AURUS',
+        status: 'AURIS',
         timestamp: new Date().toISOString()
       });
 
+      const mintedKeyId = chosenKey.id;
+
+      // Reset quick generated key reference so next mint gets a fresh one
       if (walletKeySource === 'generate') {
         quickGeneratedKey = null;
       }
 
-      updateGpgUi();
+      updateGpgUi('In-Browser Cryptographic Vault');
       renderVaultUi();
+      updateWalletModeUi();
 
       log('SUCCESS! Minted Token ' + (tokenId ? ('#' + tokenId) : '') + ' in block ' + blockNum + ' | Gas Used: ' + gasUsed, 'success');
 
@@ -1025,8 +1125,8 @@
         resultHtml += '</div>';
 
         resultHtml += '<div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">';
-        resultHtml += '  <button type="button" class="btn btn-tiny btn-green" onclick="downloadSingleBundle(' + chosenKey.id + ')">&#128190; DOWNLOAD FULL KEY BUNDLE (PUBLIC + PRIV + CERTS)</button>';
-        resultHtml += '  <button type="button" class="btn btn-tiny btn-primary" onclick="openKeyModal(' + chosenKey.id + ')">&#128065; INSPECT KEYPAIR</button>';
+        resultHtml += '  <button type="button" class="btn btn-tiny btn-green" onclick="downloadSingleBundle(' + mintedKeyId + ')">&#128190; DOWNLOAD FULL KEY BUNDLE (PUBLIC + PRIV + CERTS)</button>';
+        resultHtml += '  <button type="button" class="btn btn-tiny btn-primary" onclick="openKeyModal(' + mintedKeyId + ')">&#128065; INSPECT KEYPAIR</button>';
         resultHtml += '  <button type="button" class="btn btn-tiny btn-muted" onclick="switchMode(\'admin\')">&#128203; VIEW IN ADMIN REGISTRY</button>';
         resultHtml += '</div>';
         resultHtml += '</div>';
@@ -1048,17 +1148,29 @@
     }
   }
 
-  // ── QUICK KEY GENERATOR FOR WALLET MODE ─────────────────────────────────────
-  async function runQuickWalletGenerator() {
+  // ── QUICK KEY GENERATOR FOR OPTION 1 ────────────────────────────────────────
+  async function runSingleWalletGenerator(isUserTriggered) {
     if (isGeneratingKeys) return;
     isGeneratingKeys = true;
+
     if (elWmBtnQuickGen) {
       elWmBtnQuickGen.disabled = true;
       elWmBtnQuickGen.textContent = 'GENERATING...';
     }
+    if (elWmGenStatus) elWmGenStatus.textContent = 'Computing Curve25519 triad (Pub + Priv + Rev)...';
 
     try {
-      const identity = buildIdentity('realistic');
+      const isCustomMode = elWmGenModeCustom && elWmGenModeCustom.checked;
+      let identity;
+
+      if (isCustomMode) {
+        const nameVal = elWmGenName ? elWmGenName.value.trim() : '';
+        const emailVal = elWmGenEmail ? elWmGenEmail.value.trim() : '';
+        identity = buildIdentity('custom', nameVal, emailVal, 0, 1);
+      } else {
+        identity = buildIdentity('realistic');
+      }
+
       const keyDate = getRandomDate(true);
       const keys = await generateSingleKeypair(identity, keyDate);
       const newId = keyVault.length + 1;
@@ -1075,28 +1187,26 @@
         usedByAddress: null,
         txHash: null,
         tokenId: null,
-        mode: 'wallet-quick'
+        mode: 'wallet-generated'
       };
 
       addToVault(quickGeneratedKey);
       renderVaultUi();
+      updateWalletModeUi();
 
-      if (elPreviewKeyTag) elPreviewKeyTag.textContent = '⚡ FRESH KEY #' + newId + ' (' + identity.email + ')';
-      if (elPreviewKeyText) elPreviewKeyText.textContent = quickGeneratedKey.armoredKey;
-      if (elPreviewVaultTag) {
-        elPreviewVaultTag.style.display = 'inline-block';
-        elPreviewVaultTag.textContent = '✓ TRIAD IN VAULT';
+      if (elWmGenStatus) {
+        elWmGenStatus.textContent = '✓ Generated Key #' + newId + ' for ' + identity.name + ' <' + identity.email + '>';
       }
 
-      if (connectedSigner && elBtnSingleMint) elBtnSingleMint.disabled = false;
-      log('Generated fresh OpenPGP keypair for ' + identity.name + ' <' + identity.email + '> (Key #' + newId + '). Vault ready.', 'success');
+      log('Generated fresh OpenPGP keypair for ' + identity.name + ' <' + identity.email + '> (Key #' + newId + '). Triad preserved in vault.', 'success');
     } catch (err) {
-      log('Quick generator failed: ' + err.message, 'error');
+      log('Quick generator error: ' + err.message, 'error');
+      if (elWmGenStatus) elWmGenStatus.textContent = 'Generation failed: ' + err.message;
     } finally {
       isGeneratingKeys = false;
       if (elWmBtnQuickGen) {
         elWmBtnQuickGen.disabled = false;
-        elWmBtnQuickGen.textContent = 'GENERATE NEW KEYPAIR NOW';
+        elWmBtnQuickGen.textContent = '⚡ GENERATE NEW KEYPAIR NOW';
       }
     }
   }
@@ -1160,7 +1270,7 @@
 
       let gpgKey = getNextUnusedKey();
       if (!gpgKey) {
-        log('[' + currNum + '/' + total + '] Pool depleted — auto-generating key on the fly...', 'warn');
+        log('[' + currNum + '/' + total + '] Vault depleted — auto-generating fresh triad on the fly...', 'warn');
         const ident = buildIdentity('realistic');
         const dt = getRandomDate(true);
         const kPair = await generateSingleKeypair(ident, dt);
@@ -1274,7 +1384,7 @@
         addTableRow(currNum, addr, '-', gpgKey.id, '-', '-', '-', 'FAILED');
       }
 
-      updateGpgUi();
+      updateGpgUi('In-Browser Cryptographic Vault');
       updateBulkStats(total, currNum, successCount, failCount);
 
       if (delay > 0 && currNum < total && !abortFlag) {
@@ -1435,7 +1545,15 @@
     elWmGenerateCard    = $('wm-generate-card');
     elWmCustomCard      = $('wm-custom-card');
     elWmCustomTextarea  = $('wm-custom-textarea');
+
+    elWmGenModeRandom   = $('wm-gen-mode-random');
+    elWmGenModeCustom   = $('wm-gen-mode-custom');
+    elWmCustomIdFields  = $('wm-custom-identity-fields');
+    elWmGenName         = $('wm-gen-name');
+    elWmGenEmail        = $('wm-gen-email');
     elWmBtnQuickGen     = $('wm-btn-quick-gen');
+    elWmBtnDownloadActive = $('wm-btn-download-active');
+    elWmGenStatus       = $('wm-gen-status');
 
     elWmGpgAvail        = $('wm-gpg-avail');
     elWmGpgTotal        = $('wm-gpg-total');
@@ -1464,6 +1582,7 @@
     elGpgCount         = $('gpg-count');
     elGpgTotal         = $('wpg-total');
     elGpgSource        = $('gpg-source');
+    elBtnGotoVaultGen  = $('btn-goto-vault-gen');
     elGpgDropZone      = $('gpg-drop-zone');
     elGpgFileInput     = $('gpg-file-input');
     elDropFilename     = $('drop-filename');
@@ -1488,6 +1607,9 @@
     elGenCount         = $('gen-count');
     elGenStyle         = $('gen-style');
     elGenTimeShuffle   = $('gen-time-shuffle');
+    elGenCustomIdFields= $('gen-custom-identity-fields');
+    elGenCustomName    = $('gen-custom-name');
+    elGenCustomEmail   = $('gen-custom-email');
     elBtnRunGenerator  = $('btn-run-generator');
     elGenProgressBox   = $('gen-progress-box');
     elGenProgressLabel = $('gen-progress-label');
@@ -1550,51 +1672,76 @@
     if (elModeBtnVault)  elModeBtnVault.addEventListener('click', function() { window.switchMode('vault'); });
     if (elModeBtnAdmin)  elModeBtnAdmin.addEventListener('click', function() { window.switchMode('admin'); });
 
-    if (elWmTabPool) elWmTabPool.addEventListener('click', function() {
-      walletKeySource = 'pool';
-      elWmTabPool.classList.add('active');
-      elWmTabGenerate.classList.remove('active');
-      elWmTabCustom.classList.remove('active');
-      if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'grid';
-      if (elWmGenerateCard) elWmGenerateCard.style.display = 'none';
-      if (elWmCustomCard) elWmCustomCard.style.display = 'none';
-      updateGpgUi();
-    });
-
+    // Option 1 Tab Switches
     if (elWmTabGenerate) elWmTabGenerate.addEventListener('click', function() {
       walletKeySource = 'generate';
-      elWmTabPool.classList.remove('active');
       elWmTabGenerate.classList.add('active');
       elWmTabCustom.classList.remove('active');
-      if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'none';
+      if (elWmTabPool) elWmTabPool.classList.remove('active');
       if (elWmGenerateCard) elWmGenerateCard.style.display = 'block';
       if (elWmCustomCard) elWmCustomCard.style.display = 'none';
-      if (!quickGeneratedKey) runQuickWalletGenerator();
+      if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'none';
+      updateWalletModeUi();
     });
 
     if (elWmTabCustom) elWmTabCustom.addEventListener('click', function() {
       walletKeySource = 'custom';
-      elWmTabPool.classList.remove('active');
       elWmTabGenerate.classList.remove('active');
       elWmTabCustom.classList.add('active');
-      if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'none';
+      if (elWmTabPool) elWmTabPool.classList.remove('active');
       if (elWmGenerateCard) elWmGenerateCard.style.display = 'none';
       if (elWmCustomCard) elWmCustomCard.style.display = 'block';
-      if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'CUSTOM PASTED KEY';
-      if (elPreviewVaultTag) elPreviewVaultTag.style.display = 'none';
-      if (elPreviewKeyText) elPreviewKeyText.textContent = (elWmCustomTextarea ? elWmCustomTextarea.value : '') || '[ Please paste armored key above ]';
+      if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'none';
+      updateWalletModeUi();
     });
 
-    if (elWmCustomTextarea) elWmCustomTextarea.addEventListener('input', function() {
-      if (walletKeySource === 'custom') {
-        if (elPreviewKeyText) elPreviewKeyText.textContent = elWmCustomTextarea.value || '[ Please paste armored key above ]';
-        if (connectedSigner && elWmCustomTextarea.value.includes('-----BEGIN PGP PUBLIC KEY BLOCK-----')) {
-          if (elBtnSingleMint) elBtnSingleMint.disabled = false;
+    if (elWmTabPool) elWmTabPool.addEventListener('click', function() {
+      walletKeySource = 'pool';
+      elWmTabGenerate.classList.remove('active');
+      elWmTabCustom.classList.remove('active');
+      elWmTabPool.classList.add('active');
+      if (elWmGenerateCard) elWmGenerateCard.style.display = 'none';
+      if (elWmCustomCard) elWmCustomCard.style.display = 'none';
+      if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'grid';
+      updateGpgUi('In-Browser Cryptographic Vault');
+      updateWalletModeUi();
+    });
+
+    // Option 1 Identity Mode Toggles
+    if (elWmGenModeRandom) {
+      elWmGenModeRandom.addEventListener('change', function() {
+        if (elWmCustomIdFields) elWmCustomIdFields.style.display = 'none';
+      });
+    }
+    if (elWmGenModeCustom) {
+      elWmGenModeCustom.addEventListener('change', function() {
+        if (elWmCustomIdFields) elWmCustomIdFields.style.display = 'grid';
+      });
+    }
+
+    if (elWmBtnQuickGen) {
+      elWmBtnQuickGen.addEventListener('click', function() {
+        return runSingleWalletGenerator(true);
+      });
+    }
+
+    if (elWmBtnDownloadActive) {
+      elWmBtnDownloadActive.addEventListener('click', function() {
+        if (quickGeneratedKey) {
+          downloadSingleBundle(quickGeneratedKey.id);
+        } else {
+          alert('Please click "GENERATE NEW KEYPAIR NOW" first.');
         }
-      }
-    });
+      });
+    }
 
-    if (elWmBtnQuickGen) elWmBtnQuickGen.addEventListener('click', runQuickWalletGenerator);
+    if (elWmCustomTextarea) {
+      elWmCustomTextarea.addEventListener('input', function() {
+        if (walletKeySource === 'custom') {
+          updateWalletModeUi();
+        }
+      });
+    }
 
     if (elBtnConnect) elBtnConnect.addEventListener('click', connectBrowserWallet);
     if (elBtnDisconnect) elBtnDisconnect.addEventListener('click', disconnectBrowserWallet);
@@ -1604,12 +1751,14 @@
     if (elWmBtnExportKeys) elWmBtnExportKeys.addEventListener('click', exportVaultJson);
     if (elWmBtnDownloadVault) elWmBtnDownloadVault.addEventListener('click', exportVaultTxt);
 
+    // Option 2 Buttons
     if (elBtnInitiate) elBtnInitiate.addEventListener('click', runBulkBatchSequence);
     if (elBtnAbort) elBtnAbort.addEventListener('click', function() { abortFlag = true; log('Emergency abort signal registered.', 'warn'); });
     if (elBtnFetchGas) elBtnFetchGas.addEventListener('click', fetchBulkGas);
     if (elBtnExportKeys) elBtnExportKeys.addEventListener('click', exportVaultJson);
     if (elBtnExportCsv) elBtnExportCsv.addEventListener('click', exportAdminCsv);
     if (elBtnExportBulkVault) elBtnExportBulkVault.addEventListener('click', exportVaultTxt);
+    if (elBtnGotoVaultGen) elBtnGotoVaultGen.addEventListener('click', function() { window.switchMode('vault'); });
     if (elBtnClearTable) elBtnClearTable.addEventListener('click', function() {
       if (elExecTbody) elExecTbody.innerHTML = '<tr class="empty-row"><td colspan="8">- No transactions executed yet -</td></tr>';
     });
@@ -1624,6 +1773,15 @@
       if (elStatWallets) elStatWallets.textContent = c;
     });
 
+    // Option 3 Buttons & Inputs
+    if (elGenStyle) {
+      elGenStyle.addEventListener('change', function() {
+        if (elGenCustomIdFields) {
+          elGenCustomIdFields.style.display = elGenStyle.value === 'custom' ? 'grid' : 'none';
+        }
+      });
+    }
+
     if (elBtnRunGenerator) elBtnRunGenerator.addEventListener('click', runBatchGenerator);
     if (elBtnMasterDownloadTxt)  elBtnMasterDownloadTxt.addEventListener('click', exportVaultTxt);
     if (elBtnMasterDownloadJson) elBtnMasterDownloadJson.addEventListener('click', exportVaultJson);
@@ -1632,8 +1790,13 @@
       if (confirm('Clear all stored keys in vault?')) {
         keyVault = [];
         gpgKeyPool = [];
+        usedKeyIdsSet.clear();
+        quickGeneratedKey = null;
+        persistVault();
+        try { localStorage.removeItem(STORAGE_KEY_USED); } catch (_) {}
         updateGpgUi('Cleared');
         renderVaultUi();
+        updateWalletModeUi();
         log('Key vault cleared by operator.', 'warn');
       }
     });
@@ -1668,6 +1831,7 @@
       reader.readAsText(file);
     });
 
+    // Option 4 Buttons
     if (elAdmSearchInput) elAdmSearchInput.addEventListener('input', renderAdminUi);
     document.querySelectorAll('.adm-f-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
@@ -1716,6 +1880,7 @@
       });
     }
 
+    // Modal Events
     if (elModalClose) elModalClose.addEventListener('click', function() { elModalOverlay.style.display = 'none'; });
     if (elModalOverlay) elModalOverlay.addEventListener('click', function(e) {
       if (e.target === elModalOverlay) elModalOverlay.style.display = 'none';
@@ -1746,9 +1911,11 @@
   function init() {
     bindElements();
     attachListeners();
-    log('Initializing they · seen Autonomous Engine & Cryptographic Vault v4.2...', 'info');
-    autoLoadKeys();
+    loadPersistedState();
+    updateGpgUi('In-Browser Cryptographic Vault');
+    updateWalletModeUi();
     fetchWalletGas();
+    log('they · seen Autonomous Engine & Cryptographic Vault v4.3 initialized.', 'info');
   }
 
   if (document.readyState === 'loading') {
