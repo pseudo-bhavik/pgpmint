@@ -459,7 +459,7 @@
           </div>
 
           <div class="grid-3" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:16px;">
-            <div class="input-group">
+            <div class="input-group" id="gen-count-group">
               <label for="gen-count">Number of Keys to Generate</label>
               <select id="gen-count" class="custom-select" style="width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px; font-family:var(--font);">
                 <option value="1">1 Keypair (Instant)</option>
@@ -477,7 +477,7 @@
               <label for="gen-style">Identity &amp; Pattern Style</label>
               <select id="gen-style" class="custom-select" style="width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px; font-family:var(--font);">
                 <option value="realistic" selected>🎲 Realistic Names &amp; Diverse Domains</option>
-                <option value="custom">👤 Custom / Self-Authentic Base Identity</option>
+                <option value="custom">👤 Custom Identities (Dynamic Multi-Row Input)</option>
                 <option value="dev">💻 Developer / SysAdmin Profiles</option>
                 <option value="anon">🔒 Anonymous Cryptographic Tags</option>
               </select>
@@ -492,20 +492,34 @@
             </div>
           </div>
 
-          <!-- CUSTOM IDENTITY BASE FIELDS (Shown when custom is selected) -->
-          <div id="gen-custom-identity-fields" style="display:none; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:16px; padding:12px; background:var(--bg); border:1px solid var(--border);">
-            <div class="input-group" style="margin-bottom:0;">
-              <label for="gen-custom-name">Custom Base Name <span style="color:var(--muted); font-weight:normal;">(e.g. Bhavik Patel)</span></label>
-              <input type="text" id="gen-custom-name" placeholder="e.g. Bhavik Patel" style="width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); padding:7px 10px; font-family:var(--font); font-size:11px;">
+          <!-- DYNAMIC CUSTOM IDENTITY MULTI-ROW BUILDER (Shown when custom is selected) -->
+          <div id="gen-custom-identity-fields" style="display:none; margin-bottom:16px; padding:14px; background:var(--bg); border:1px solid var(--border-hi);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <span class="code-green" style="font-weight:700; font-size:12px;">👤 Custom Identity Profiles (Exact Name &amp; Email per Key)</span>
+              <span id="gen-custom-row-count-badge" class="amber" style="font-size:11px; font-weight:700;">1 Keypair will be generated</span>
             </div>
-            <div class="input-group" style="margin-bottom:0;">
-              <label for="gen-custom-email">Custom Base Email / Domain <span style="color:var(--muted); font-weight:normal;">(e.g. bhavik@nodeworks.io)</span></label>
-              <input type="text" id="gen-custom-email" placeholder="e.g. bhavik@nodeworks.io or @domain.com" style="width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); padding:7px 10px; font-family:var(--font); font-size:11px;">
+            <div style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">
+              Enter your exact name and email address. Validating the generated public key block will produce these exact credentials.
+            </div>
+
+            <div id="gen-custom-rows-container" style="margin-bottom:12px;">
+              <div class="custom-id-row" data-row-idx="1">
+                <span class="id-row-index">#1</span>
+                <input type="text" class="gen-row-name" placeholder="Full Name (e.g. Bhavik Patel)">
+                <input type="email" class="gen-row-email" placeholder="Email Address (e.g. bhavik@nodeworks.io)">
+                <button type="button" class="btn btn-tiny btn-danger btn-remove-row" style="display:none;" title="Remove this row">&times;</button>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button type="button" id="btn-add-custom-row" class="btn btn-tiny btn-green" style="font-weight:700; padding:6px 14px;">
+                + ADD ANOTHER IDENTITY ROW
+              </button>
             </div>
           </div>
 
           <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
-            <button type="button" id="btn-run-generator" class="btn btn-primary" style="flex:2; min-width:240px; padding:12px 20px;">
+            <button type="button" id="btn-run-generator" class="btn btn-green" style="flex:2; min-width:240px; padding:12px 20px; font-weight:700; font-size:13px;">
               &#9889; GENERATE CRYPTOGRAPHIC KEYPAIRS &amp; SAVE TO VAULT
             </button>
           </div>
@@ -581,7 +595,7 @@
 
           <!-- VAULT KEYS LIST CONTAINER -->
           <div id="vault-keys-container" class="vault-grid">
-            <div class="empty-vault-card">- No keys in vault yet. Generate keypairs above or load keys.json -</div>
+            <div class="empty-vault-card">- No keys in vault yet. Generate keypairs above or import a vault JSON backup -</div>
           </div>
         </div>
       </section>

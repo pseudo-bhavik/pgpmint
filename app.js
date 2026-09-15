@@ -40,7 +40,6 @@
   let gpgKeyPool       = [];
   let keyVault         = [];
   let adminRegistry    = [];
-  let usedKeyIdsSet    = new Set();
   let runLog           = [];
   let abortFlag        = false;
   let isBatchRunning   = false;
@@ -71,7 +70,7 @@
   let elPkInput, elBtnClearPks, elWalletCount, elGpgCount, elGpgTotal, elGpgSource, elBtnGotoVaultGen, elGpgDropZone, elGpgFileInput, elDropFilename, elGpgPasteInput;
   let elStatWallets, elStatGpg, elStatGas, elStatProgress, elStatSuccess, elStatFailed, elProgressBar, elBtnInitiate, elBtnAbort, elAbortNotice, elExecTbody;
   let elBtnExportKeys, elBtnExportCsv, elBtnExportBulkVault, elBtnClearTable;
-  let elGenCount, elGenStyle, elGenTimeShuffle, elGenCustomIdFields, elGenCustomName, elGenCustomEmail, elBtnRunGenerator, elGenProgressBox, elGenProgressLabel, elGenProgressNum, elGenProgressBar;
+  let elGenCountGroup, elGenCount, elGenStyle, elGenTimeShuffle, elGenCustomIdFields, elGenCustomRowsContainer, elBtnAddCustomRow, elGenCustomRowCountBadge, elBtnRunGenerator, elGenProgressBox, elGenProgressLabel, elGenProgressNum, elGenProgressBar;
   let elVaultStatTotal, elVaultStatTriads, elVaultStatUnused, elVaultStatMapped, elVaultBadgeTotal;
   let elBtnMasterDownloadTxt, elBtnMasterDownloadJson;
   let elBtnDownloadUnusedJson, elBtnImportVault, elFileImportVault, elBtnClearVault, elVaultSearchInput, elVaultFilteredCount, elVaultKeysContainer;
@@ -151,10 +150,7 @@
   /**
    * Generates identity object with name and email based on style or custom parameters.
    */
-  function buildIdentity(style, customName, customEmail, index, total) {
-    index = index || 0;
-    total = total || 1;
-
+  function buildIdentity(style, customName, customEmail) {
     // 1. Custom / Self-Authentic Identity
     if (style === 'custom') {
       let finalName = (customName || '').trim();
@@ -163,24 +159,12 @@
       if (finalName && !finalEmail) {
         const handle = finalName.toLowerCase().replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.');
         const dom = randomItem(DOMAINS_PUBLIC);
-        finalEmail = (total > 1 && index > 0) ? (handle + '+' + (index + 1) + '@' + dom) : (handle + '@' + dom);
+        finalEmail = handle + '@' + dom;
       } else if (!finalName && finalEmail) {
         const parts = finalEmail.split('@');
         const handle = parts[0] || 'User';
-        const cleanName = handle.replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }).trim();
-        finalName = (total > 1 && index > 0) ? (cleanName + ' ' + (index + 1)) : cleanName;
-      } else if (finalName && finalEmail) {
-        if (total > 1 && index > 0) {
-          finalName = finalName + ' ' + (index + 1);
-          if (finalEmail.includes('@')) {
-            const parts = finalEmail.split('@');
-            finalEmail = parts[0] + '+' + (index + 1) + '@' + parts[1];
-          } else {
-            finalEmail = finalEmail + '+' + (index + 1) + '@nodeworks.io';
-          }
-        }
-      } else {
-        // Both blank, generate realistic
+        finalName = handle.replace(/[^a-zA-Z0-9]/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }).trim();
+      } else if (!finalName && !finalEmail) {
         return buildIdentity('realistic');
       }
 
@@ -237,6 +221,9 @@
     return new Date(Date.now() - offset);
   }
 
+  /**
+   * Resilient, zero-failure 1-click download trigger using Blob + temporary link + timeout revocation.
+   */
   function triggerDownload(filename, content, mimeType) {
     try {
       const blob = new Blob([content], { type: mimeType || 'text/plain;charset=utf-8' });
@@ -280,6 +267,10 @@
   // ── LOCAL STORAGE PERSISTENCE ───────────────────────────────────────────────
   function loadPersistedState() {
     try {
+      localStorage.removeItem(STORAGE_KEY_USED);
+    } catch (_) {}
+
+    try {
       const rawVault = localStorage.getItem(STORAGE_KEY_VAULT);
       if (rawVault) {
         const arr = JSON.parse(rawVault);
@@ -287,16 +278,6 @@
           keyVault = arr;
           gpgKeyPool = arr.slice();
           log('Restored ' + arr.length + ' cryptographic keypairs from in-browser Vault.', 'info');
-        }
-      }
-    } catch (_) {}
-
-    try {
-      const rawUsed = localStorage.getItem(STORAGE_KEY_USED);
-      if (rawUsed) {
-        const arr = JSON.parse(rawUsed);
-        if (Array.isArray(arr)) {
-          arr.forEach(function(id) { usedKeyIdsSet.add(Number(id)); });
         }
       }
     } catch (_) {}
@@ -320,10 +301,11 @@
 
   function persistUsedKeyId(keyId) {
     if (keyId === undefined || keyId === null) return;
-    usedKeyIdsSet.add(Number(keyId));
-    try {
-      localStorage.setItem(STORAGE_KEY_USED, JSON.stringify(Array.from(usedKeyIdsSet)));
-    } catch (_) {}
+    const item = keyVault.find(function(k) { return Number(k.id) === Number(keyId); });
+    if (item) item.used = true;
+    const poolItem = gpgKeyPool.find(function(k) { return Number(k.id) === Number(keyId); });
+    if (poolItem) poolItem.used = true;
+    persistVault();
   }
 
   function persistAdminRegistry() {
@@ -401,6 +383,9 @@
   }
 
   function addToVault(keyEntry) {
+    if (keyEntry.id === undefined) {
+      keyEntry.id = keyVault.length + 1;
+    }
     const existingIdx = keyVault.findIndex(function(k) { return k.id === keyEntry.id || (k.armoredKey && k.armoredKey === keyEntry.armoredKey); });
     if (existingIdx !== -1) {
       keyVault[existingIdx] = Object.assign({}, keyVault[existingIdx], keyEntry);
@@ -415,10 +400,6 @@
       gpgKeyPool.push(keyEntry);
     }
 
-    if (keyEntry.used) {
-      persistUsedKeyId(keyEntry.id);
-    }
-
     persistVault();
     updateVaultCounters();
   }
@@ -426,8 +407,8 @@
   function updateVaultCounters() {
     const total = keyVault.length;
     const triads = keyVault.filter(function(k) { return !!k.privateKey && !!k.revocationCertificate; }).length;
-    const unused = keyVault.filter(function(k) { return !k.used && !usedKeyIdsSet.has(k.id); }).length;
-    const mapped = keyVault.filter(function(k) { return !!k.usedByAddress || k.used || usedKeyIdsSet.has(k.id); }).length;
+    const unused = keyVault.filter(function(k) { return !k.used; }).length;
+    const mapped = keyVault.filter(function(k) { return !!k.usedByAddress || k.used; }).length;
 
     if (elVaultStatTotal)  elVaultStatTotal.textContent  = total;
     if (elVaultStatTriads) elVaultStatTriads.textContent = triads;
@@ -458,7 +439,7 @@
     sourceName = sourceName || 'Vault Import';
     keys.forEach(function(curr, idx) {
       const id = curr.id !== undefined ? curr.id : (idx + 1);
-      const isUsed = !!curr.used || usedKeyIdsSet.has(Number(id));
+      const isUsed = !!curr.used || !!curr.usedByAddress;
       const item = {
         id: id,
         armoredKey: curr.armoredKey,
@@ -485,11 +466,11 @@
   }
 
   function getUnusedGpgKeys() {
-    return gpgKeyPool.filter(function(k) { return !k.used && !usedKeyIdsSet.has(k.id) && !k.inProgress; });
+    return gpgKeyPool.filter(function(k) { return !k.used && !k.inProgress; });
   }
 
   function getNextUnusedKey() {
-    return gpgKeyPool.find(function(k) { return !k.used && !usedKeyIdsSet.has(k.id) && !k.inProgress; }) || null;
+    return gpgKeyPool.find(function(k) { return !k.used && !k.inProgress; }) || null;
   }
 
   function updateGpgUi(sourceName) {
@@ -558,34 +539,84 @@
     }
   }
 
+  // ── DYNAMIC CUSTOM IDENTITY ROWS (OPTION 3) ─────────────────────────────────
+  function updateCustomRowsUi() {
+    if (!elGenCustomRowsContainer) return;
+    const rows = elGenCustomRowsContainer.querySelectorAll('.custom-id-row');
+    rows.forEach(function(row, idx) {
+      row.setAttribute('data-row-idx', idx + 1);
+      const idxBadge = row.querySelector('.id-row-index');
+      if (idxBadge) idxBadge.textContent = '#' + (idx + 1);
+      const removeBtn = row.querySelector('.btn-remove-row');
+      if (removeBtn) {
+        removeBtn.style.display = rows.length > 1 ? 'inline-block' : 'none';
+      }
+    });
+
+    if (elGenCustomRowCountBadge) {
+      elGenCustomRowCountBadge.textContent = rows.length + (rows.length === 1 ? ' Keypair will be generated' : ' Keypairs will be generated');
+    }
+  }
+
+  function addCustomIdentityRow(nameVal, emailVal) {
+    if (!elGenCustomRowsContainer) return;
+    const row = document.createElement('div');
+    row.className = 'custom-id-row';
+    row.innerHTML = '<span class="id-row-index">#</span>' +
+      '<input type="text" class="gen-row-name" placeholder="Full Name (e.g. Maya Morales)" value="' + escapeHtml(nameVal || '') + '">' +
+      '<input type="email" class="gen-row-email" placeholder="Email Address (e.g. maya@pm.me)" value="' + escapeHtml(emailVal || '') + '">' +
+      '<button type="button" class="btn btn-tiny btn-danger btn-remove-row" title="Remove this row">&times;</button>';
+    elGenCustomRowsContainer.appendChild(row);
+    updateCustomRowsUi();
+  }
+
   // ── BATCH IN-BROWSER KEY GENERATOR (OPTION 3) ───────────────────────────────
   async function runBatchGenerator() {
     if (isGeneratingKeys) return;
-    const count = parseInt(elGenCount ? elGenCount.value : '10', 10) || 10;
     const style = elGenStyle ? elGenStyle.value : 'realistic';
     const shuffle = elGenTimeShuffle ? (elGenTimeShuffle.value === 'shuffle') : true;
 
-    const customName = elGenCustomName ? elGenCustomName.value.trim() : '';
-    const customEmail = elGenCustomEmail ? elGenCustomEmail.value.trim() : '';
+    let targets = [];
+    if (style === 'custom') {
+      const rows = elGenCustomRowsContainer ? elGenCustomRowsContainer.querySelectorAll('.custom-id-row') : [];
+      if (rows.length === 0) {
+        addCustomIdentityRow();
+      }
+      const updatedRows = elGenCustomRowsContainer.querySelectorAll('.custom-id-row');
+      updatedRows.forEach(function(r, idx) {
+        const nameInp = r.querySelector('.gen-row-name');
+        const emailInp = r.querySelector('.gen-row-email');
+        const rawName = nameInp ? nameInp.value.trim() : '';
+        const rawEmail = emailInp ? emailInp.value.trim() : '';
+        const identity = buildIdentity('custom', rawName, rawEmail);
+        targets.push(identity);
+      });
+    } else {
+      const count = parseInt(elGenCount ? elGenCount.value : '10', 10) || 10;
+      for (let i = 0; i < count; i++) {
+        targets.push(buildIdentity(style));
+      }
+    }
 
+    const totalCount = targets.length;
     isGeneratingKeys = true;
     if (elBtnRunGenerator) elBtnRunGenerator.disabled = true;
     if (elGenProgressBox) elGenProgressBox.style.display = 'block';
-    if (elGenProgressNum) elGenProgressNum.textContent = '0 / ' + count;
+    if (elGenProgressNum) elGenProgressNum.textContent = '0 / ' + totalCount;
     if (elGenProgressBar) elGenProgressBar.style.width = '0%';
-    log('Starting in-browser OpenPGP generator for ' + count + ' keypair(s) (Curve25519 ECC)...', 'info');
+    log('Starting in-browser OpenPGP generator for ' + totalCount + ' keypair(s) (Curve25519 ECC)...', 'info');
 
     const startId = keyVault.length + 1;
     const startT = Date.now();
 
-    for (let i = 0; i < count; i++) {
-      const identity = buildIdentity(style, customName, customEmail, i, count);
+    for (let i = 0; i < totalCount; i++) {
+      const identity = targets[i];
       const keyDate = getRandomDate(shuffle);
       const currNum = i + 1;
 
       if (elGenProgressLabel) elGenProgressLabel.textContent = 'Generating key for ' + identity.name + ' <' + identity.email + '>...';
-      if (elGenProgressNum) elGenProgressNum.textContent = currNum + ' / ' + count;
-      if (elGenProgressBar) elGenProgressBar.style.width = ((currNum / count) * 100).toFixed(1) + '%';
+      if (elGenProgressNum) elGenProgressNum.textContent = currNum + ' / ' + totalCount;
+      if (elGenProgressBar) elGenProgressBar.style.width = ((currNum / totalCount) * 100).toFixed(1) + '%';
 
       try {
         const keys = await generateSingleKeypair(identity, keyDate);
@@ -615,8 +646,8 @@
     const elapsed = ((Date.now() - startT) / 1000).toFixed(2);
     isGeneratingKeys = false;
     if (elBtnRunGenerator) elBtnRunGenerator.disabled = false;
-    if (elGenProgressLabel) elGenProgressLabel.textContent = '✓ ' + count + ' Keypairs generated successfully in ' + elapsed + 's!';
-    log('Successfully created ' + count + ' cryptographic keypairs in ' + elapsed + 's. Added to Vault.', 'success');
+    if (elGenProgressLabel) elGenProgressLabel.textContent = '✓ ' + totalCount + ' Keypairs generated successfully in ' + elapsed + 's!';
+    log('Successfully created ' + totalCount + ' cryptographic keypairs in ' + elapsed + 's. Added to Vault.', 'success');
 
     updateGpgUi('In-Browser Cryptographic Vault');
     renderVaultUi();
@@ -653,7 +684,7 @@
 
     let html = '';
     list.forEach(function(k) {
-      const isUsed = !!k.used || usedKeyIdsSet.has(k.id);
+      const isUsed = !!k.used || !!k.usedByAddress;
       const hasPriv = !!k.privateKey;
       const hasRev = !!k.revocationCertificate;
 
@@ -1434,7 +1465,7 @@
   function exportVaultJson() {
     const list = (keyVault && keyVault.length > 0) ? keyVault : gpgKeyPool;
     if (!list || list.length === 0) {
-      alert('No keys in vault to export. Please generate keys or load keys.json first.');
+      alert('No keys in vault to export. Please generate keys or import a vault JSON backup first.');
       return;
     }
     const content = JSON.stringify(list, null, 2);
@@ -1445,7 +1476,7 @@
   function exportVaultTxt() {
     const list = (keyVault && keyVault.length > 0) ? keyVault : gpgKeyPool;
     if (!list || list.length === 0) {
-      alert('No keys in vault to export. Please generate keys or load keys.json first.');
+      alert('No keys in vault to export. Please generate keys or import a vault JSON backup first.');
       return;
     }
     let text = '======================================================================\n';
@@ -1475,7 +1506,7 @@
   }
 
   function exportUnusedJson() {
-    const unused = keyVault.filter(function(k) { return !k.used && !usedKeyIdsSet.has(k.id); });
+    const unused = keyVault.filter(function(k) { return !k.used && !k.usedByAddress; });
     const content = JSON.stringify(unused, null, 2);
     triggerDownload('keys-unused-pool.json', content, 'application/json');
     log('Exported ' + unused.length + ' unused keys as keys-unused-pool.json.', 'success');
@@ -1604,12 +1635,14 @@
     elBtnExportBulkVault = $('btn-export-bulk-vault');
     elBtnClearTable    = $('btn-clear-table');
 
+    elGenCountGroup    = $('gen-count-group');
     elGenCount         = $('gen-count');
     elGenStyle         = $('gen-style');
     elGenTimeShuffle   = $('gen-time-shuffle');
     elGenCustomIdFields= $('gen-custom-identity-fields');
-    elGenCustomName    = $('gen-custom-name');
-    elGenCustomEmail   = $('gen-custom-email');
+    elGenCustomRowsContainer = $('gen-custom-rows-container');
+    elBtnAddCustomRow  = $('btn-add-custom-row');
+    elGenCustomRowCountBadge = $('gen-custom-row-count-badge');
     elBtnRunGenerator  = $('btn-run-generator');
     elGenProgressBox   = $('gen-progress-box');
     elGenProgressLabel = $('gen-progress-label');
@@ -1776,9 +1809,36 @@
     // Option 3 Buttons & Inputs
     if (elGenStyle) {
       elGenStyle.addEventListener('change', function() {
+        const isCustom = elGenStyle.value === 'custom';
         if (elGenCustomIdFields) {
-          elGenCustomIdFields.style.display = elGenStyle.value === 'custom' ? 'grid' : 'none';
+          elGenCustomIdFields.style.display = isCustom ? 'block' : 'none';
         }
+        if (elGenCountGroup) {
+          elGenCountGroup.style.display = isCustom ? 'none' : 'block';
+        }
+        updateCustomRowsUi();
+      });
+    }
+
+    if (elBtnAddCustomRow) {
+      elBtnAddCustomRow.addEventListener('click', function() {
+        addCustomIdentityRow();
+      });
+    }
+
+    if (elGenCustomRowsContainer) {
+      elGenCustomRowsContainer.addEventListener('click', function(e) {
+        const removeBtn = e.target.closest('.btn-remove-row');
+        if (removeBtn) {
+          const row = removeBtn.closest('.custom-id-row');
+          if (row && elGenCustomRowsContainer.querySelectorAll('.custom-id-row').length > 1) {
+            row.remove();
+            updateCustomRowsUi();
+          }
+        }
+      });
+      elGenCustomRowsContainer.addEventListener('input', function() {
+        updateCustomRowsUi();
       });
     }
 
@@ -1790,7 +1850,6 @@
       if (confirm('Clear all stored keys in vault?')) {
         keyVault = [];
         gpgKeyPool = [];
-        usedKeyIdsSet.clear();
         quickGeneratedKey = null;
         persistVault();
         try { localStorage.removeItem(STORAGE_KEY_USED); } catch (_) {}

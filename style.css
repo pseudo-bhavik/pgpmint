@@ -299,47 +299,66 @@ input::placeholder, textarea::placeholder {
   font-size: 10px;
 }
 
+.btn-green {
+  border-color: var(--green);
+  color: #050505 !important;
+  background: var(--green) !important;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+}
+.btn-green:hover:not(:disabled) {
+  background: #26ff7b !important;
+  color: #000000 !important;
+  box-shadow: 0 0 16px rgba(0, 255, 102, 0.7);
+  transform: translateY(-1px);
+}
+
 .btn-primary {
   border-color: var(--green);
   color: var(--green);
+  background: rgba(0, 255, 102, 0.08);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--green);
-  color: var(--bg);
+  color: var(--bg) !important;
   box-shadow: var(--glow-green);
 }
 
 .btn-danger {
   border-color: var(--red);
   color: var(--red);
+  background: rgba(255, 51, 51, 0.08);
 }
 .btn-danger:hover:not(:disabled) {
   background: var(--red);
-  color: var(--bg);
+  color: var(--bg) !important;
 }
 
 .btn-amber {
   border-color: var(--amber);
   color: var(--amber);
+  background: rgba(255, 176, 0, 0.08);
 }
 .btn-amber:hover:not(:disabled) {
   background: var(--amber);
-  color: var(--bg);
+  color: var(--bg) !important;
   box-shadow: var(--glow-amber);
 }
 
 .btn-muted {
   border-color: var(--border-hi);
-  color: var(--text-dim);
+  color: var(--text);
+  background: var(--surface);
 }
 .btn-muted:hover:not(:disabled) {
-  border-color: var(--muted);
-  color: var(--text);
+  border-color: var(--green);
+  color: var(--green);
 }
 
 .btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(80%);
 }
 
 .btn-large {
@@ -350,6 +369,45 @@ input::placeholder, textarea::placeholder {
   display: block;
   letter-spacing: 0.15em;
   margin-top: 14px;
+}
+
+/* Dynamic Custom Identity Rows (Option 3) */
+.custom-id-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  background: var(--surface);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s;
+}
+.custom-id-row:hover {
+  border-color: var(--border-hi);
+}
+.id-row-index {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber);
+  min-width: 32px;
+}
+.custom-id-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 10px;
+  font-family: var(--font);
+  font-size: 11px;
+}
+.custom-id-row input:focus {
+  border-color: var(--green);
+}
+.btn-remove-row {
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 /* —— WALLET CONNECT SPECIFIC ┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐┐ */
