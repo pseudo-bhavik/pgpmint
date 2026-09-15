@@ -615,7 +615,7 @@
         </div>
         <div class="panel-body">
           <div style="font-size:12px; color:var(--text); line-height:1.6; margin-bottom:14px;">
-            This audit registry provides an <strong>unambiguous, end-to-end mapping</strong> of which Ethereum address executed Function #9 with which GPG Public Key, whether its <strong>Private Key</strong> and <strong>Revocation Certificate</strong> are backed up in the vault, and the on-chain Token ID.
+            This audit registry provides an <strong>unambiguous, end-to-end mapping</strong> of which Ethereum address executed Function #9 with which GPG Public Key, whether its <strong>GPG Private Key</strong> and <strong>Revocation Certificate</strong> are backed up in the vault, and the on-chain Token ID.
           </div>
 
           <div class="stats-row" style="margin-bottom:16px;">
@@ -632,7 +632,7 @@
               <div class="stat-value amber" id="adm-stat-bulk">0</div>
             </div>
             <div class="stat-box">
-              <div class="stat-label">Full Private Keys Backed Up</div>
+              <div class="stat-label">GPG Private Keys Backed Up</div>
               <div class="stat-value green" id="adm-stat-priv-saved">0</div>
             </div>
           </div>
@@ -644,7 +644,7 @@
               <button type="button" class="btn btn-tiny btn-muted adm-f-btn active" data-filter="all">ALL</button>
               <button type="button" class="btn btn-tiny btn-muted adm-f-btn" data-filter="wallet">WALLET ONLY</button>
               <button type="button" class="btn btn-tiny btn-muted adm-f-btn" data-filter="bulk">BULK ONLY</button>
-              <button type="button" class="btn btn-tiny btn-muted adm-f-btn" data-filter="has-priv">HAS PRIVATE KEY</button>
+              <button type="button" class="btn btn-tiny btn-muted adm-f-btn" data-filter="has-priv">HAS GPG PRIV KEY</button>
             </div>
           </div>
 
@@ -656,8 +656,8 @@
                   <th>#</th>
                   <th>Ethereum Address</th>
                   <th>GPG Identity / Email</th>
-                  <th>Public Key</th>
-                  <th>Private Key</th>
+                  <th>GPG Public</th>
+                  <th>GPG Private</th>
                   <th>Revocation Cert</th>
                   <th>Transaction Hash</th>
                   <th>Token ID</th>
