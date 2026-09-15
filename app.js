@@ -72,7 +72,8 @@
   let elBtnExportKeys, elBtnExportCsv, elBtnExportBulkVault, elBtnClearTable;
   let elGenCount, elGenStyle, elGenTimeShuffle, elBtnRunGenerator, elGenProgressBox, elGenProgressLabel, elGenProgressNum, elGenProgressBar;
   let elVaultStatTotal, elVaultStatTriads, elVaultStatUnused, elVaultStatMapped, elVaultBadgeTotal;
-  let elBtnDownloadVaultJson, elBtnDownloadVaultTxt, elBtnDownloadUnusedJson, elBtnImportVault, elFileImportVault, elBtnClearVault, elVaultSearchInput, elVaultFilteredCount, elVaultKeysContainer;
+  let elBtnMasterDownloadTxt, elBtnMasterDownloadJson;
+  let elBtnDownloadUnusedJson, elBtnImportVault, elFileImportVault, elBtnClearVault, elVaultSearchInput, elVaultFilteredCount, elVaultKeysContainer;
   let elAdmStatTotal, elAdmStatWallet, elAdmStatBulk, elAdmStatPrivSaved, elAdmSearchInput, elAdmTbody, elAdmBtnExportJson, elAdmBtnExportCsv, elAdmBtnExportKeypack, elAdmBtnClear;
   let elConsoleLog, elBtnClearConsole;
   let elModalOverlay, elModalTitle, elModalClose, elModalMetaGrid, elModalTabPub, elModalTabPriv, elModalTabRev, elModalContentText, elModalBtnCopy, elModalBtnDownload, elModalBtnDownloadAll, elModalCopiedNotice;
@@ -175,15 +176,43 @@
   }
 
   function triggerDownload(filename, content, mimeType) {
-    const blob = new Blob([content], { type: mimeType || 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const blob = new Blob([content], { type: mimeType || 'text/plain;charset=utf-8' });
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveOrOpenBlob(blob, filename);
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      a.setAttribute('download', filename);
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() {
+        if (document.body.contains(a)) {
+          document.body.removeChild(a);
+        }
+        URL.revokeObjectURL(url);
+      }, 2000);
+    } catch (err) {
+      console.error('Blob download error, trying data URI fallback:', err);
+      try {
+        const dataUri = 'data:' + (mimeType || 'text/plain;charset=utf-8') + ',' + encodeURIComponent(content);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = dataUri;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+          if (document.body.contains(a)) document.body.removeChild(a);
+        }, 500);
+      } catch (e2) {
+        alert('Download failed in this browser. Please use Inspect to view/copy keys.');
+      }
+    }
   }
 
   // ── LOCAL STORAGE PERSISTENCE ───────────────────────────────────────────────
@@ -559,12 +588,9 @@
         html += '  <div class="vc-mapped">&#128279; Bound Wallet: <span class="code-green">' + k.usedByAddress.substring(0, 10) + '...' + k.usedByAddress.substring(36) + '</span></div>';
       }
 
-      html += '  <div class="vc-actions">';
-      html += '    <button type="button" class="btn btn-tiny btn-primary" onclick="openKeyModal(' + k.id + ')">&#128065; INSPECT</button>';
-      html += '    <button type="button" class="btn btn-tiny btn-muted" onclick="downloadKeyFile(' + k.id + ', \'pub\')">.PUB</button>';
-      if (hasPriv) html += '    <button type="button" class="btn btn-tiny btn-muted" onclick="downloadKeyFile(' + k.id + ', \'priv\')">.KEY</button>';
-      if (hasRev)  html += '    <button type="button" class="btn btn-tiny btn-muted" onclick="downloadKeyFile(' + k.id + ', \'rev\')">.REV</button>';
-      html += '    <button type="button" class="btn btn-tiny btn-green" onclick="downloadSingleBundle(' + k.id + ')">BUNDLE</button>';
+      html += '  <div class="vc-actions" style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">';
+      html += '    <button type="button" class="btn btn-tiny btn-green btn-download-bundle" data-key-id="' + k.id + '" style="font-weight:700;">📥 DOWNLOAD THIS KEY (.TXT)</button>';
+      html += '    <button type="button" class="btn btn-tiny btn-primary btn-inspect-key" data-key-id="' + k.id + '">&#128065; INSPECT / VIEW</button>';
       html += '  </div>';
       html += '</div>';
     });
@@ -636,15 +662,15 @@
       html += '  <td>' + (idx + 1) + '</td>';
       html += '  <td><a href="https://etherscan.io/address/' + r.walletAddress + '" target="_blank" class="code-green">' + shortAddr + ' &nearr;</a></td>';
       html += '  <td>' + escapeHtml(r.name || ('Key #' + r.keyId)) + '<br><span style="font-size:9.5px; color:var(--text-dim);">' + escapeHtml(r.email || '') + '</span></td>';
-      html += '  <td><button type="button" class="btn btn-tiny btn-muted" onclick="openKeyModal(' + r.keyId + ')">KEY #' + r.keyId + '</button></td>';
+      html += '  <td><button type="button" class="btn btn-tiny btn-muted btn-inspect-key" data-key-id="' + r.keyId + '">KEY #' + r.keyId + '</button></td>';
       html += '  <td><span class="v-badge ' + (r.hasPrivateKey ? 'priv' : 'used') + '">' + (r.hasPrivateKey ? '✓ SAVED' : 'NO') + '</span></td>';
       html += '  <td><span class="v-badge ' + (r.hasRevocationCert ? 'rev' : 'used') + '">' + (r.hasRevocationCert ? '✓ SAVED' : 'NO') + '</span></td>';
       html += '  <td>' + txLink + '</td>';
       html += '  <td>' + tokenDisplay + '</td>';
       html += '  <td><span class="status-badge success">' + escapeHtml(r.status || 'AURIS') + '</span></td>';
       html += '  <td>';
-      html += '    <button type="button" class="btn btn-tiny btn-primary" onclick="openKeyModal(' + r.keyId + ')">INSPECT</button>';
-      html += '    <button type="button" class="btn btn-tiny btn-green" onclick="downloadSingleBundle(' + r.keyId + ')">BUNDLE</button>';
+      html += '    <button type="button" class="btn btn-tiny btn-green btn-download-bundle" data-key-id="' + r.keyId + '" style="font-weight:700;">📥 DOWNLOAD (.TXT)</button>';
+      html += '    <button type="button" class="btn btn-tiny btn-primary btn-inspect-key" data-key-id="' + r.keyId + '">INSPECT</button>';
       html += '  </td>';
       html += '</tr>';
     });
@@ -653,10 +679,12 @@
   }
 
   // ── KEY INSPECTOR MODAL ─────────────────────────────────────────────────────
-  window.openKeyModal = function(keyId) {
-    const item = keyVault.find(function(k) { return k.id === keyId; });
+  function openKeyModal(keyId) {
+    const list = (keyVault && keyVault.length > 0) ? keyVault : gpgKeyPool;
+    const item = list.find(function(k) { return Number(k.id) === Number(keyId); });
     if (!item) {
       log('Key #' + keyId + ' not found in vault.', 'error');
+      alert('Key #' + keyId + ' not found in memory.');
       return;
     }
     selectedModalKey = item;
@@ -673,7 +701,7 @@
 
     setModalTab('pub');
     if (elModalOverlay) elModalOverlay.style.display = 'flex';
-  };
+  }
 
   function setModalTab(tab) {
     activeModalTab = tab;
@@ -691,8 +719,9 @@
     }
   }
 
-  window.downloadKeyFile = function(keyId, type) {
-    const item = keyVault.find(function(k) { return k.id === keyId; });
+  function downloadKeyFile(keyId, type) {
+    const list = (keyVault && keyVault.length > 0) ? keyVault : gpgKeyPool;
+    const item = list.find(function(k) { return Number(k.id) === Number(keyId); });
     if (!item) return;
     if (type === 'pub') {
       triggerDownload('key-' + item.id + '-public.asc', item.armoredKey);
@@ -703,13 +732,17 @@
       if (!item.revocationCertificate) { alert('No revocation certificate stored for Key #' + item.id); return; }
       triggerDownload('key-' + item.id + '-revocation.asc', item.revocationCertificate);
     }
-  };
+  }
 
-  window.downloadSingleBundle = function(keyId) {
-    const item = keyVault.find(function(k) { return k.id === keyId; });
-    if (!item) return;
+  function downloadSingleBundle(keyId) {
+    const list = (keyVault && keyVault.length > 0) ? keyVault : gpgKeyPool;
+    const item = list.find(function(k) { return Number(k.id) === Number(keyId); });
+    if (!item) {
+      alert('Key #' + keyId + ' not found in memory.');
+      return;
+    }
     let text = '======================================================================\n';
-    text += 'THEY · SEEN CRYPTOGRAPHIC KEYPACK BUNDLE\n';
+    text += 'THEY · SEEN MASTER CRYPTOGRAPHIC KEYPACK BUNDLE — KEY #' + item.id + '\n';
     text += '======================================================================\n';
     text += 'Key ID:                 #' + item.id + '\n';
     text += 'Identity:               ' + (item.name || 'Anonymous') + '\n';
@@ -731,8 +764,9 @@
     text += '----- 3. REVOCATION CERTIFICATE BLOCK -----\n';
     text += (item.revocationCertificate || '[NO REVOCATION CERTIFICATE IN RECORD]') + '\n\n';
 
-    triggerDownload('keypack-bundle-key-' + item.id + '.txt', text);
-  };
+    triggerDownload('they-seen-key-' + item.id + '-complete-bundle.txt', text);
+    log('Downloaded complete bundle for Key #' + item.id + '.', 'success');
+  }
 
   // ── GAS FEE MONITORING ──────────────────────────────────────────────────────
   async function fetchGasFromProvider(provider, isWalletMode) {
@@ -1277,7 +1311,7 @@
     tr.innerHTML = '<td>' + idx + '</td>' +
       '<td><a href="https://etherscan.io/address/' + addr + '" target="_blank" class="code-green">' + shortAddr + ' &nearr;</a></td>' +
       '<td>' + (bal !== '-' ? (parseFloat(bal).toFixed(4) + ' ETH') : '-') + '</td>' +
-      '<td><button type="button" class="btn btn-tiny btn-muted" onclick="openKeyModal(' + keyId + ')">KEY #' + keyId + '</button></td>' +
+      '<td><button type="button" class="btn btn-tiny btn-muted btn-inspect-key" data-key-id="' + keyId + '">KEY #' + keyId + '</button></td>' +
       '<td>' + txLink + '</td>' +
       '<td>' + block + '</td>' +
       '<td>' + gasUsed + '</td>' +
@@ -1288,21 +1322,31 @@
 
   // ── EXPORT SUITE ────────────────────────────────────────────────────────────
   function exportVaultJson() {
-    const content = JSON.stringify(keyVault, null, 2);
-    triggerDownload('they-seen-cryptographic-vault-backup.json', content, 'application/json');
-    log('Exported full Cryptographic Vault (' + keyVault.length + ' keys).', 'success');
+    const list = (keyVault && keyVault.length > 0) ? keyVault : gpgKeyPool;
+    if (!list || list.length === 0) {
+      alert('No keys in vault to export. Please generate keys or load keys.json first.');
+      return;
+    }
+    const content = JSON.stringify(list, null, 2);
+    triggerDownload('they-seen-all-keys-vault-backup.json', content, 'application/json');
+    log('Exported full Cryptographic Vault (' + list.length + ' keys).', 'success');
   }
 
   function exportVaultTxt() {
+    const list = (keyVault && keyVault.length > 0) ? keyVault : gpgKeyPool;
+    if (!list || list.length === 0) {
+      alert('No keys in vault to export. Please generate keys or load keys.json first.');
+      return;
+    }
     let text = '======================================================================\n';
     text += 'THEY · SEEN MASTER CRYPTOGRAPHIC KEYPACK VAULT BUNDLE\n';
-    text += 'Total Keys Stored: ' + keyVault.length + '\n';
+    text += 'Total Keys Stored: ' + list.length + '\n';
     text += 'Export Timestamp:  ' + new Date().toISOString() + '\n';
     text += 'Target Contract:   ' + CONTRACT_ADDRESS + '\n';
     text += 'Target Method:     Function #9 seen(string pgp) [0x363355d2]\n';
     text += '======================================================================\n\n';
 
-    keyVault.forEach(function(k) {
+    list.forEach(function(k) {
       text += '######################################################################\n';
       text += 'KEY #' + k.id + ' | ' + (k.name || 'Anonymous') + ' <' + (k.email || '-') + '>\n';
       text += 'Created:      ' + (k.createdAt || '-') + '\n';
@@ -1311,13 +1355,13 @@
       text += 'Tx Hash:      ' + (k.txHash || '-') + '\n';
       text += 'Token ID:     ' + (k.tokenId ? ('#' + k.tokenId) : 'Pending') + '\n';
       text += '----------------------------------------------------------------------\n';
-      text += '--- ARMORED PUBLIC KEY BLOCK ---\n' + (k.armoredKey || '[NONE]') + '\n\n';
-      text += '--- ARMORED PRIVATE KEY BLOCK ---\n' + (k.privateKey || '[NO PRIVATE KEY IN RECORD]') + '\n\n';
-      text += '--- REVOCATION CERTIFICATE BLOCK ---\n' + (k.revocationCertificate || '[NO REVOCATION CERTIFICATE IN RECORD]') + '\n\n';
+      text += '--- 1. ARMORED PUBLIC KEY BLOCK ---\n' + (k.armoredKey || '[NONE]') + '\n\n';
+      text += '--- 2. ARMORED PRIVATE KEY BLOCK ---\n' + (k.privateKey || '[NO PRIVATE KEY IN RECORD]') + '\n\n';
+      text += '--- 3. REVOCATION CERTIFICATE BLOCK ---\n' + (k.revocationCertificate || '[NO REVOCATION CERTIFICATE IN RECORD]') + '\n\n';
     });
 
-    triggerDownload('they-seen-keypack-vault-bundle.txt', text);
-    log('Exported full TXT Keypack Bundle (' + keyVault.length + ' keys).', 'success');
+    triggerDownload('they-seen-all-keys-vault-bundle.txt', text);
+    log('Exported full TXT Keypack Bundle (' + list.length + ' keys).', 'success');
   }
 
   function exportUnusedJson() {
@@ -1455,8 +1499,8 @@
     elVaultStatUnused  = $('vault-stat-unused');
     elVaultStatMapped  = $('vault-stat-mapped');
     elVaultBadgeTotal  = $('vault-badge-total');
-    elBtnDownloadVaultJson = $('btn-download-vault-json');
-    elBtnDownloadVaultTxt  = $('btn-download-vault-txt');
+    elBtnMasterDownloadTxt  = $('btn-master-download-txt');
+    elBtnMasterDownloadJson = $('btn-master-download-json');
     elBtnDownloadUnusedJson= $('btn-download-unused-json');
     elBtnImportVault   = $('btn-import-vault');
     elFileImportVault  = $('file-import-vault');
@@ -1494,6 +1538,13 @@
   }
 
   function attachListeners() {
+    // Expose functions globally on window
+    window.openKeyModal = openKeyModal;
+    window.downloadKeyFile = downloadKeyFile;
+    window.downloadSingleBundle = downloadSingleBundle;
+    window.exportVaultTxt = exportVaultTxt;
+    window.exportVaultJson = exportVaultJson;
+
     if (elModeBtnWallet) elModeBtnWallet.addEventListener('click', function() { window.switchMode('wallet'); });
     if (elModeBtnBulk)   elModeBtnBulk.addEventListener('click', function() { window.switchMode('bulk'); });
     if (elModeBtnVault)  elModeBtnVault.addEventListener('click', function() { window.switchMode('vault'); });
@@ -1574,8 +1625,8 @@
     });
 
     if (elBtnRunGenerator) elBtnRunGenerator.addEventListener('click', runBatchGenerator);
-    if (elBtnDownloadVaultJson) elBtnDownloadVaultJson.addEventListener('click', exportVaultJson);
-    if (elBtnDownloadVaultTxt)  elBtnDownloadVaultTxt.addEventListener('click', exportVaultTxt);
+    if (elBtnMasterDownloadTxt)  elBtnMasterDownloadTxt.addEventListener('click', exportVaultTxt);
+    if (elBtnMasterDownloadJson) elBtnMasterDownloadJson.addEventListener('click', exportVaultJson);
     if (elBtnDownloadUnusedJson) elBtnDownloadUnusedJson.addEventListener('click', exportUnusedJson);
     if (elBtnClearVault) elBtnClearVault.addEventListener('click', function() {
       if (confirm('Clear all stored keys in vault?')) {
@@ -1587,6 +1638,21 @@
       }
     });
     if (elVaultSearchInput) elVaultSearchInput.addEventListener('input', renderVaultUi);
+
+    // Event delegation on Vault grid for instant, zero-failure clicks
+    if (elVaultKeysContainer) {
+      elVaultKeysContainer.addEventListener('click', function(e) {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const keyId = parseInt(btn.getAttribute('data-key-id'), 10);
+        if (!keyId) return;
+        if (btn.classList.contains('btn-inspect-key')) {
+          openKeyModal(keyId);
+        } else if (btn.classList.contains('btn-download-bundle')) {
+          downloadSingleBundle(keyId);
+        }
+      });
+    }
 
     if (elBtnImportVault) elBtnImportVault.addEventListener('click', function() { if (elFileImportVault) elFileImportVault.click(); });
     if (elFileImportVault) elFileImportVault.addEventListener('change', function(e) {
@@ -1621,6 +1687,34 @@
         log('Admin registry log cleared.', 'warn');
       }
     });
+
+    // Event delegation on Admin table
+    if (elAdmTbody) {
+      elAdmTbody.addEventListener('click', function(e) {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const keyId = parseInt(btn.getAttribute('data-key-id'), 10);
+        if (!keyId) return;
+        if (btn.classList.contains('btn-inspect-key')) {
+          openKeyModal(keyId);
+        } else if (btn.classList.contains('btn-download-bundle')) {
+          downloadSingleBundle(keyId);
+        }
+      });
+    }
+
+    // Event delegation on Bulk batch table
+    if (elExecTbody) {
+      elExecTbody.addEventListener('click', function(e) {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const keyId = parseInt(btn.getAttribute('data-key-id'), 10);
+        if (!keyId) return;
+        if (btn.classList.contains('btn-inspect-key')) {
+          openKeyModal(keyId);
+        }
+      });
+    }
 
     if (elModalClose) elModalClose.addEventListener('click', function() { elModalOverlay.style.display = 'none'; });
     if (elModalOverlay) elModalOverlay.addEventListener('click', function(e) {

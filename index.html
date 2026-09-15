@@ -211,8 +211,8 @@
 
           <div class="wallet-bottom-bar" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:10px; border-top:1px solid var(--border); flex-wrap:wrap; gap:10px;">
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" id="wm-btn-download-vault" class="btn btn-tiny btn-green" style="font-weight:700;">📥 DOWNLOAD ALL IN 1 FILE (.TXT)</button>
               <button type="button" id="wm-btn-export-keys" class="btn btn-tiny btn-muted">EXPORT UPDATED KEYS.JSON</button>
-              <button type="button" id="wm-btn-download-vault" class="btn btn-tiny btn-green">DOWNLOAD KEY VAULT (PUBLIC + PRIV + CERTS)</button>
             </div>
             <span style="font-size:10px; color:var(--muted);">&bull; Real-time cryptographic preservation: No keys are lost.</span>
           </div>
@@ -399,9 +399,9 @@
           </div>
 
           <div class="export-row" style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" id="btn-export-bulk-vault" class="btn btn-tiny btn-green" style="font-weight:700;">📥 DOWNLOAD ALL IN 1 FILE (.TXT)</button>
             <button type="button" id="btn-export-keys" class="btn btn-tiny btn-muted">EXPORT UPDATED KEYS.JSON</button>
             <button type="button" id="btn-export-csv" class="btn btn-tiny btn-muted">EXPORT RUN LOG (CSV)</button>
-            <button type="button" id="btn-export-bulk-vault" class="btn btn-tiny btn-green">EXPORT FULL VAULT (PUBLIC + PRIV + CERTS)</button>
             <button type="button" id="btn-clear-table" class="btn btn-tiny btn-muted" style="margin-left:auto;">CLEAR TABLE</button>
           </div>
           <div class="export-note">
@@ -508,11 +508,25 @@
             </div>
           </div>
 
+          <!-- MASTER 1-CLICK ALL-IN-ONE DOWNLOAD BANNER -->
+          <div class="master-download-bar" style="background: rgba(0, 255, 102, 0.08); border: 2px solid var(--green); padding: 14px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--green);">⚡ 1-CLICK ALL-IN-ONE VAULT DOWNLOAD</div>
+              <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">Download all Public Keys, Private Keys, Revocation Certificates &amp; Identities into a single clean file.</div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button type="button" id="btn-master-download-txt" class="btn btn-green btn-large" style="padding: 10px 20px; font-size: 12px; font-weight: 700; cursor:pointer;">
+                📥 DOWNLOAD ALL IN 1 FILE (.TXT)
+              </button>
+              <button type="button" id="btn-master-download-json" class="btn btn-primary btn-large" style="padding: 10px 20px; font-size: 12px; font-weight: 700; cursor:pointer;">
+                📥 DOWNLOAD ALL (.JSON)
+              </button>
+            </div>
+          </div>
+
           <!-- VAULT ACTIONS TOOLBAR -->
-          <div class="vault-toolbar" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; padding:12px; background:var(--surface-hi); border:1px solid var(--border);">
-            <button type="button" id="btn-download-vault-json" class="btn btn-tiny btn-green">&#128229; DOWNLOAD COMPLETE VAULT (JSON)</button>
-            <button type="button" id="btn-download-vault-txt" class="btn btn-tiny btn-primary">&#128196; DOWNLOAD KEYPACK BUNDLE (TXT)</button>
-            <button type="button" id="btn-download-unused-json" class="btn btn-tiny btn-muted">DOWNLOAD UNUSED POOL (JSON)</button>
+          <div class="vault-toolbar" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; padding:12px; background:var(--surface-hi); border:1px solid var(--border); align-items:center;">
+            <button type="button" id="btn-download-unused-json" class="btn btn-tiny btn-muted">DOWNLOAD UNUSED POOL ONLY (JSON)</button>
             <button type="button" id="btn-import-vault" class="btn btn-tiny btn-muted">&#128228; IMPORT VAULT JSON</button>
             <input type="file" id="file-import-vault" accept=".json" style="display:none;">
             <button type="button" id="btn-clear-vault" class="btn btn-tiny btn-danger" style="margin-left:auto;">CLEAR VAULT</button>
@@ -604,9 +618,9 @@
 
           <!-- ADMIN EXPORTS -->
           <div class="export-row" style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <button type="button" id="adm-btn-export-json" class="btn btn-tiny btn-green">&#128229; EXPORT REGISTRY (JSON)</button>
-            <button type="button" id="adm-btn-export-csv" class="btn btn-tiny btn-primary">&#128196; EXPORT REGISTRY (CSV)</button>
-            <button type="button" id="adm-btn-export-keypack" class="btn btn-tiny btn-muted">&#128190; DOWNLOAD FULL CRYPTO VAULT</button>
+            <button type="button" id="adm-btn-export-keypack" class="btn btn-tiny btn-green" style="font-weight:700;">📥 DOWNLOAD ALL IN 1 FILE (.TXT)</button>
+            <button type="button" id="adm-btn-export-json" class="btn btn-tiny btn-primary">&#128229; EXPORT REGISTRY (JSON)</button>
+            <button type="button" id="adm-btn-export-csv" class="btn btn-tiny btn-muted">&#128196; EXPORT REGISTRY (CSV)</button>
             <button type="button" id="adm-btn-clear" class="btn btn-tiny btn-danger" style="margin-left:auto;">CLEAR REGISTRY</button>
           </div>
         </div>
