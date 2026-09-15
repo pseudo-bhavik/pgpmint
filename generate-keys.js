@@ -69,7 +69,7 @@ for (let i = 0; i < count; i++) {
   process.stdout.write(`\r\x1b[36m${progress}\x1b[0m Generating key for \x1b[33m${identity.email}\x1b[0m…`);
 
   try {
-    const { publicKey } = await generateKey({
+    const { publicKey, privateKey, revocationCertificate } = await generateKey({
       type: 'ecc',
       curve: 'curve25519',
       userIDs: [{ name: identity.name, email: identity.email }],
@@ -82,6 +82,8 @@ for (let i = 0; i < count; i++) {
       name: identity.name,
       email: identity.email,
       armoredKey: publicKey,
+      privateKey: privateKey,
+      revocationCertificate: revocationCertificate,
       used: false,
     });
   } catch (err) {
@@ -93,9 +95,10 @@ for (let i = 0; i < count; i++) {
 const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 process.stdout.write('\n');
 
-// ── Merge and Write keys.json ─────────────────────────────────────────────────
+// ── Merge and Write keys.json & keys-vault.json ────────────────────────────────
 const allKeys = [...existingKeys, ...generated];
 writeFileSync('keys.json', JSON.stringify(allKeys, null, 2), 'utf-8');
+writeFileSync('keys-vault.json', JSON.stringify(allKeys, null, 2), 'utf-8');
 
 // ── Terminal Summary Table ────────────────────────────────────────────────────
 const COL = {

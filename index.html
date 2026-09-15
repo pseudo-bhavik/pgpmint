@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Batch Mint Engine // Ethereum Mainnet</title>
+  <title>they · seen // Autonomous Batch Engine &amp; Cryptographic Vault</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,8 +12,8 @@
     <!-- HEADER -->
     <header class="site-header">
       <div class="header-left">
-        <h1>Batch Mint Engine <span style="font-size:13px; color:var(--amber); font-weight:normal;">v3.2</span></h1>
-        <div class="subtitle">// 100% Client-Side Ephemeral Execution &bull; Zero Server &bull; Zero Local Storage &bull; Minimum Cost Engine</div>
+        <h1>they &bull; seen <span style="font-size:13px; color:var(--amber); font-weight:normal;">// Engine &amp; Vault v4.0</span></h1>
+        <div class="subtitle">// 100% Client-Side Ephemeral Execution &bull; Zero Server &bull; OpenPGP Triad Vault &bull; Admin Audit Ledger</div>
       </div>
       <div class="header-badges">
         <span class="chain-badge">ETH MAINNET [ID: 1]</span>
@@ -25,13 +25,19 @@
 
     <!-- TOP MODE SWITCH BAR -->
     <div class="mode-bar">
-      <span class="mode-bar-label">Execution Mode:</span>
+      <span class="mode-bar-label">Navigation &amp; Mode:</span>
       <div class="mode-toggle-group">
         <button type="button" id="mode-btn-wallet" class="mode-btn active">
           <span class="mode-icon">&block;</span> Option 1: Connect Wallet &amp; Mint
         </button>
         <button type="button" id="mode-btn-bulk" class="mode-btn">
           <span class="mode-icon">&equiv;</span> Option 2: Bulk Burner Mint
+        </button>
+        <button type="button" id="mode-btn-vault" class="mode-btn">
+          <span class="mode-icon">&#128272;</span> Option 3: GPG Generator &amp; Vault
+        </button>
+        <button type="button" id="mode-btn-admin" class="mode-btn">
+          <span class="mode-icon">&#128203;</span> Option 4: Admin Registry &amp; Audit
         </button>
       </div>
       <div class="mode-desc" id="mode-desc-text">Interactive single mint via MetaMask / Browser Wallet · Function #9 seen(string pgp)</div>
@@ -110,7 +116,7 @@
             <div class="contract-banner" style="margin-bottom:0;">
               <div class="cb-row">
                 <span class="cb-label">Contract Address:</span>
-                <span class="cb-val"><a href="https://etherscan.io/address/0x3286e6525A38cD1d277ECaF435b156c0cc892C29#writeContract#F9" target="_blank" rel="noopener noreferrer">0x3286e6525A38cD1d277ECaF435b156c0cc892C29 &nearr;</a></span>
+                <span class="cb-val"><a href="https://etherscan.io/address/0x3286e6525A38cD1d277ECaF435b156c0cc892C29#writeContract#F9" target="_blank" rel="noopener noreferrer">0x3286...2C29 &nearr;</a></span>
               </div>
               <div class="cb-row">
                 <span class="cb-label">Target Method:</span>
@@ -125,13 +131,29 @@
         </section>
       </div>
 
-      <!-- GPG KEY POOL & EXECUTE MINT -->
+      <!-- GPG KEY SELECTION & EXECUTE MINT -->
       <section class="panel">
-        <div class="panel-header">
-          <span class="ph-icon">&diams;</span> [04] GPG Key Pool &amp; Mint Execution
+        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <span><span class="ph-icon">&diams;</span> [04] GPG Key Selection &amp; Closed-System Mint</span>
+          <span class="vault-badge" id="wm-vault-sync-status">&#128272; Vault Active</span>
         </div>
         <div class="panel-body">
-          <div class="stats-row">
+
+          <!-- KEY SOURCE TABS -->
+          <div class="key-source-tabs" style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+            <button type="button" id="wm-tab-pool" class="key-tab-btn active">
+              [1] Use Preloaded Pool Key
+            </button>
+            <button type="button" id="wm-tab-generate" class="key-tab-btn">
+              [2] ⚡ Generate Fresh Keypair (Public + Private + Revocation)
+            </button>
+            <button type="button" id="wm-tab-custom" class="key-tab-btn">
+              [3] Custom Paste Key
+            </button>
+          </div>
+
+          <!-- POOL STATS -->
+          <div id="wm-pool-stats-row" class="stats-row">
             <div class="stat-box">
               <div class="stat-label">Available Unused Keys</div>
               <div class="stat-value" id="wm-gpg-avail">0</div>
@@ -150,24 +172,35 @@
             </div>
           </div>
 
+          <!-- GENERATE FRESH KEY CARD (Shown when Tab 2 active) -->
+          <div id="wm-generate-card" class="generate-quick-box" style="display:none; margin-bottom:14px; padding:14px; background:var(--surface-hi); border:1px solid var(--border);">
+            <div class="gqb-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+              <span class="code-green" style="font-weight:700;">&#9889; Client-Side OpenPGP Keypair Generator (ECC Curve25519)</span>
+              <button type="button" id="wm-btn-quick-gen" class="btn btn-tiny btn-green">GENERATE NEW KEYPAIR NOW</button>
+            </div>
+            <div class="gqb-desc" style="font-size:11px; color:var(--text); line-height:1.5;">
+              Creates a brand new cryptographic keypair in browser memory. Both the <strong>Private Key</strong> and <strong>Revocation Certificate</strong> will be stored in your Vault for safekeeping and ready for one-click download.
+            </div>
+          </div>
+
+          <!-- CUSTOM KEY INPUT (Shown when Tab 3 active) -->
+          <div id="wm-custom-card" class="custom-key-box" style="display:none; margin-bottom:14px;">
+            <label for="wm-custom-textarea" style="font-size:11px; color:var(--text); font-weight:700; margin-bottom:6px; display:block;">
+              Paste Armored PGP Public Key:
+            </label>
+            <textarea id="wm-custom-textarea" rows="6" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----&#10;...&#10;-----END PGP PUBLIC KEY BLOCK-----" spellcheck="false" style="width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:var(--font); font-size:11px; padding:10px;"></textarea>
+          </div>
+
           <!-- NEXT KEY PREVIEW -->
           <div class="next-key-preview">
             <div class="preview-header">
               <span>ACTIVE GPG PAYLOAD FOR NEXT TRANSACTION:</span>
-              <span class="preview-tag" id="preview-key-tag">NO UNUSED KEYS</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <span class="preview-tag" id="preview-key-tag">NO UNUSED KEYS</span>
+                <span class="vault-status-tag" id="preview-vault-tag" style="display:none;">VAULT READY</span>
+              </div>
             </div>
             <div class="preview-content" id="preview-key-text">[ Loading keys.json from repository... ]</div>
-          </div>
-
-          <!-- DROP ZONE OVERRIDE -->
-          <div class="manual-override-box">
-            <div class="sub-heading">// MANUAL OVERRIDE (Optional: drag &amp; drop alternate keys.json file)</div>
-            <div class="drop-zone" id="wm-drop-zone">
-              <strong>Drag &amp; drop custom keys.json here, or click to browse</strong>
-              <span>Accepts JSON array containing [{ id, armoredKey }]</span>
-              <span class="file-name-tag" id="wm-drop-filename"></span>
-              <input type="file" id="wm-file-input" accept=".json" style="display:none;">
-            </div>
           </div>
 
           <!-- MINT BUTTON & RESULT -->
@@ -176,9 +209,12 @@
           </button>
           <div id="wm-mint-result" class="mint-result-box" style="display:none;"></div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:10px; border-top:1px solid var(--border);">
-            <button type="button" id="wm-btn-export-keys" class="btn btn-tiny btn-muted">EXPORT UPDATED KEYS.JSON</button>
-            <span style="font-size:10px; color:var(--muted);">&bull; Downloads updated keys.json with used keys tagged for Git commit</span>
+          <div class="wallet-bottom-bar" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:10px; border-top:1px solid var(--border); flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" id="wm-btn-export-keys" class="btn btn-tiny btn-muted">EXPORT UPDATED KEYS.JSON</button>
+              <button type="button" id="wm-btn-download-vault" class="btn btn-tiny btn-green">DOWNLOAD KEY VAULT (PUBLIC + PRIV + CERTS)</button>
+            </div>
+            <span style="font-size:10px; color:var(--muted);">&bull; Real-time cryptographic preservation: No keys are lost.</span>
           </div>
         </div>
       </section>
@@ -271,7 +307,7 @@
             </div>
 
             <div class="drop-zone" id="gpg-drop-zone" style="margin-bottom:10px;">
-              <strong>Drag &amp; drop keys.json file</strong>
+              <strong>Drag &amp; drop keys.json / vault.json file</strong>
               <span>or click to browse local file</span>
               <span class="file-name-tag" id="drop-filename"></span>
               <input type="file" id="gpg-file-input" accept=".json" style="display:none;">
@@ -362,13 +398,14 @@
             </table>
           </div>
 
-          <div class="export-row" style="margin-top:14px;">
+          <div class="export-row" style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" id="btn-export-keys" class="btn btn-tiny btn-muted">EXPORT UPDATED KEYS.JSON</button>
             <button type="button" id="btn-export-csv" class="btn btn-tiny btn-muted">EXPORT RUN LOG (CSV)</button>
+            <button type="button" id="btn-export-bulk-vault" class="btn btn-tiny btn-green">EXPORT FULL VAULT (PUBLIC + PRIV + CERTS)</button>
             <button type="button" id="btn-clear-table" class="btn btn-tiny btn-muted" style="margin-left:auto;">CLEAR TABLE</button>
           </div>
           <div class="export-note">
-            &bull; <span class="code-amber">EXPORT UPDATED KEYS.JSON</span> saves a copy with used keys marked so you can commit back to Git without duplicate submissions.
+            &bull; All transactions, mapped wallet addresses, public keys, private keys, and revocation certificates are synchronized in memory and ready for export.
           </div>
         </div>
       </section>
@@ -376,11 +413,214 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- LIVE CONSOLE LOG (ALWAYS VISIBLE FOR BOTH MODES)                   -->
+    <!-- OPTION 3: GPG KEY GENERATOR & CLOSED-SYSTEM VAULT PANEL             -->
+    <!-- =================================================================== -->
+    <div id="vault-mode-wrap" style="display:none;">
+
+      <!-- CRYPTOGRAPHIC GENERATOR STUDIO -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="ph-icon">&#128272;</span> [01] In-Browser Cryptographic Keypair Generator (OpenPGP.js)
+        </div>
+        <div class="panel-body">
+          <div class="generator-intro" style="margin-bottom:16px; font-size:12px; line-height:1.6; color:var(--text);">
+            Generates 100% compliant <strong>OpenPGP Curve25519 (ECC)</strong> cryptographic triads directly inside your browser sandbox. Each generated key includes:
+            <ul style="margin:8px 0 8px 20px; color:var(--green);">
+              <li><strong>Armored Public Key</strong> (Sent in transaction calldata to earn the Ear / <code>auris = true</code>)</li>
+              <li><strong>Armored Private Key</strong> (Preserved for future signing, decryption, or identity proof)</li>
+              <li><strong>Revocation Certificate</strong> (Cryptographic emergency revocation proof)</li>
+            </ul>
+          </div>
+
+          <div class="grid-3" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:16px;">
+            <div class="input-group">
+              <label for="gen-count">Number of Keys to Generate</label>
+              <select id="gen-count" class="custom-select" style="width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px; font-family:var(--font);">
+                <option value="1">1 Keypair (Instant)</option>
+                <option value="5">5 Keypairs</option>
+                <option value="10" selected>10 Keypairs</option>
+                <option value="25">25 Keypairs</option>
+                <option value="50">50 Keypairs</option>
+                <option value="100">100 Keypairs</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="gen-style">Identity &amp; Pattern Style</label>
+              <select id="gen-style" class="custom-select" style="width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px; font-family:var(--font);">
+                <option value="realistic" selected>Realistic Names &amp; Diverse Mail Domains</option>
+                <option value="dev">Developer / SysAdmin Profiles</option>
+                <option value="anon">Anonymous Cryptographic Tags</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="gen-time-shuffle">Timestamp Offset</label>
+              <select id="gen-time-shuffle" class="custom-select" style="width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px; font-family:var(--font);">
+                <option value="shuffle" selected>Randomized (-10h to Current Time)</option>
+                <option value="now">Exact Current Timestamp</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+            <button type="button" id="btn-run-generator" class="btn btn-primary" style="flex:2; min-width:240px; padding:12px 20px;">
+              &#9889; GENERATE CRYPTOGRAPHIC KEYPAIRS &amp; SAVE TO VAULT
+            </button>
+          </div>
+
+          <!-- GENERATOR PROGRESS -->
+          <div id="gen-progress-box" style="display:none; margin-top:10px;">
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+              <span id="gen-progress-label" class="code-green">Generating keys...</span>
+              <span id="gen-progress-num" class="amber">0 / 0</span>
+            </div>
+            <div class="progress-wrap">
+              <div id="gen-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CLOSED-SYSTEM VAULT MANAGER -->
+      <section class="panel">
+        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <span><span class="ph-icon">&#128190;</span> [02] Cryptographic Vault &amp; Keypack Backup</span>
+          <span class="vault-counter-badge" id="vault-badge-total">0 Keypairs Stored</span>
+        </div>
+        <div class="panel-body">
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-label">Total Vault Keys</div>
+              <div class="stat-value" id="vault-stat-total">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Full Triads (Priv + Cert)</div>
+              <div class="stat-value green" id="vault-stat-triads">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Unused In Pool</div>
+              <div class="stat-value blue" id="vault-stat-unused">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Mapped to Minted Addresses</div>
+              <div class="stat-value amber" id="vault-stat-mapped">0</div>
+            </div>
+          </div>
+
+          <!-- VAULT ACTIONS TOOLBAR -->
+          <div class="vault-toolbar" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; padding:12px; background:var(--surface-hi); border:1px solid var(--border);">
+            <button type="button" id="btn-download-vault-json" class="btn btn-tiny btn-green">&#128229; DOWNLOAD COMPLETE VAULT (JSON)</button>
+            <button type="button" id="btn-download-vault-txt" class="btn btn-tiny btn-primary">&#128196; DOWNLOAD KEYPACK BUNDLE (TXT)</button>
+            <button type="button" id="btn-download-unused-json" class="btn btn-tiny btn-muted">DOWNLOAD UNUSED POOL (JSON)</button>
+            <button type="button" id="btn-import-vault" class="btn btn-tiny btn-muted">&#128228; IMPORT VAULT JSON</button>
+            <input type="file" id="file-import-vault" accept=".json" style="display:none;">
+            <button type="button" id="btn-clear-vault" class="btn btn-tiny btn-danger" style="margin-left:auto;">CLEAR VAULT</button>
+          </div>
+
+          <!-- VAULT SEARCH & FILTER -->
+          <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
+            <input type="text" id="vault-search-input" placeholder="Search by Key ID, Name, Email, or Wallet Address..." style="flex:1; padding:8px 12px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:var(--font); font-size:11px;">
+            <span id="vault-filtered-count" style="font-size:11px; color:var(--muted);">Showing 0 keys</span>
+          </div>
+
+          <!-- VAULT KEYS LIST CONTAINER -->
+          <div id="vault-keys-container" class="vault-grid">
+            <div class="empty-vault-card">- No keys in vault yet. Generate keypairs above or load keys.json -</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- OPTION 4: ADMIN ONLY REGISTRY & AUDIT LEDGER PANEL                  -->
+    <!-- =================================================================== -->
+    <div id="admin-mode-wrap" style="display:none;">
+
+      <!-- ADMIN MAPPING TABLE -->
+      <section class="panel">
+        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <span><span class="ph-icon">&#128203;</span> Master Address-to-PGP Key Registry &amp; Audit Trail</span>
+          <span class="admin-badge">&#128274; Confidential Ledger</span>
+        </div>
+        <div class="panel-body">
+          <div style="font-size:12px; color:var(--text); line-height:1.6; margin-bottom:14px;">
+            This audit registry provides an <strong>unambiguous, end-to-end mapping</strong> of which Ethereum address executed Function #9 with which GPG Public Key, whether its <strong>Private Key</strong> and <strong>Revocation Certificate</strong> are backed up in the vault, and the on-chain Token ID.
+          </div>
+
+          <div class="stats-row" style="margin-bottom:16px;">
+            <div class="stat-box">
+              <div class="stat-label">Total Mints Tracked</div>
+              <div class="stat-value" id="adm-stat-total">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Option 1 (Wallet) Mints</div>
+              <div class="stat-value blue" id="adm-stat-wallet">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Option 2 (Bulk) Mints</div>
+              <div class="stat-value amber" id="adm-stat-bulk">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Full Private Keys Backed Up</div>
+              <div class="stat-value green" id="adm-stat-priv-saved">0</div>
+            </div>
+          </div>
+
+          <!-- ADMIN SEARCH & FILTERS -->
+          <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="adm-search-input" placeholder="Filter by 0x Address, Key ID, Email, Tx Hash..." style="flex:1; min-width:260px; padding:8px 12px; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:var(--font); font-size:11px;">
+            <div class="admin-filter-group" style="display:flex; gap:6px;">
+              <button type="button" class="btn btn-tiny btn-muted adm-f-btn active" data-filter="all">ALL</button>
+              <button type="button" class="btn btn-tiny btn-muted adm-f-btn" data-filter="wallet">WALLET ONLY</button>
+              <button type="button" class="btn btn-tiny btn-muted adm-f-btn" data-filter="bulk">BULK ONLY</button>
+              <button type="button" class="btn btn-tiny btn-muted adm-f-btn" data-filter="has-priv">HAS PRIVATE KEY</button>
+            </div>
+          </div>
+
+          <!-- ADMIN REGISTRY TABLE -->
+          <div class="table-wrapper">
+            <table class="exec-table admin-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Ethereum Address</th>
+                  <th>GPG Identity / Email</th>
+                  <th>Public Key</th>
+                  <th>Private Key</th>
+                  <th>Revocation Cert</th>
+                  <th>Transaction Hash</th>
+                  <th>Token ID</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adm-tbody">
+                <tr class="empty-row"><td colspan="10">- No mint records logged in registry yet -</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ADMIN EXPORTS -->
+          <div class="export-row" style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <button type="button" id="adm-btn-export-json" class="btn btn-tiny btn-green">&#128229; EXPORT REGISTRY (JSON)</button>
+            <button type="button" id="adm-btn-export-csv" class="btn btn-tiny btn-primary">&#128196; EXPORT REGISTRY (CSV)</button>
+            <button type="button" id="adm-btn-export-keypack" class="btn btn-tiny btn-muted">&#128190; DOWNLOAD FULL CRYPTO VAULT</button>
+            <button type="button" id="adm-btn-clear" class="btn btn-tiny btn-danger" style="margin-left:auto;">CLEAR REGISTRY</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- LIVE CONSOLE LOG (ALWAYS VISIBLE FOR ALL MODES)                     -->
     <!-- =================================================================== -->
     <section class="panel" style="margin-top:20px;">
-      <div class="panel-header">
-        <span class="ph-icon">&diams;</span> System &amp; Transaction Console Log
+      <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><span class="ph-icon">&diams;</span> System &amp; Cryptographic Console Log</span>
+        <button type="button" id="btn-clear-console" class="btn btn-tiny btn-muted" style="font-size:9px; padding:2px 6px;">CLEAR LOG</button>
       </div>
       <div class="panel-body" style="padding:0;">
         <div id="console-log"></div>
@@ -389,12 +629,49 @@
 
     <!-- FOOTER -->
     <footer class="site-footer">
-      <div>ETHEREUM MAINNET BATCH MINT DASHBOARD &bull; ZERO SERVER &bull; 100% EPHEMERAL IN-MEMORY TRANSACTIONS &bull; FUNCTION #9 LOCKED</div>
+      <div>THEY &bull; SEEN AUTONOMOUS ENGINE &bull; 100% EPHEMERAL CLIENT-SIDE ARCHITECTURE &bull; FULL CRYPTOGRAPHIC VAULT PRESERVATION</div>
     </footer>
 
   </div>
 
+  <!-- ===================================================================== -->
+  <!-- KEY INSPECTOR & CRYPTO EXPORT MODAL                                   -->
+  <!-- ===================================================================== -->
+  <div id="key-modal-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">&#128272; Cryptographic Key Inspector</span>
+        <button type="button" id="modal-btn-close" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-meta-grid" id="modal-meta-grid">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="modal-tabs" style="display:flex; gap:6px; margin:12px 0;">
+          <button type="button" id="modal-tab-pub" class="btn btn-tiny btn-primary modal-tab-btn active">Public Key (.pub)</button>
+          <button type="button" id="modal-tab-priv" class="btn btn-tiny btn-muted modal-tab-btn">Private Key (.key)</button>
+          <button type="button" id="modal-tab-rev" class="btn btn-tiny btn-muted modal-tab-btn">Revocation Cert (.rev)</button>
+        </div>
+
+        <div class="modal-content-box">
+          <textarea id="modal-content-text" rows="12" readonly spellcheck="false"></textarea>
+        </div>
+
+        <div class="modal-actions" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;">
+          <div style="display:flex; gap:8px;">
+            <button type="button" id="modal-btn-copy" class="btn btn-tiny btn-green">COPY TO CLIPBOARD</button>
+            <button type="button" id="modal-btn-download" class="btn btn-tiny btn-primary">DOWNLOAD CURRENT BLOCK</button>
+            <button type="button" id="modal-btn-download-all" class="btn btn-tiny btn-muted">DOWNLOAD FULL BUNDLE (TXT)</button>
+          </div>
+          <span id="modal-copied-notice" class="code-green" style="font-size:11px; display:none;">COPIED!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- VENDOR & APPLICATION SCRIPTS -->
+  <script src="vendor/openpgp.min.js"></script>
   <script src="vendor/ethers.umd.min.js"></script>
   <script src="app.js"></script>
 </body>

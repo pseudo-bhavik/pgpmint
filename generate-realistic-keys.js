@@ -188,7 +188,7 @@ for (let i = 0; i < count; i++) {
   process.stdout.write(`\r\x1b[36m${progress}\x1b[0m Creating key for \x1b[32m${identity.name.padEnd(20)}\x1b[0m <\x1b[33m${identity.email}\x1b[0m>…`);
 
   try {
-    const { publicKey } = await generateKey({
+    const { publicKey, privateKey, revocationCertificate } = await generateKey({
       type: 'ecc',
       curve: 'curve25519',
       userIDs: [{ name: identity.name, email: identity.email }],
@@ -202,6 +202,9 @@ for (let i = 0; i < count; i++) {
       name: identity.name,
       email: identity.email,
       armoredKey: publicKey,
+      privateKey: privateKey,
+      revocationCertificate: revocationCertificate,
+      createdAt: keyDate.toISOString(),
       used: false,
     });
   } catch (err) {
@@ -213,9 +216,10 @@ for (let i = 0; i < count; i++) {
 const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 process.stdout.write('\n');
 
-// ── Merge & Write to keys.json ────────────────────────────────────────────────
+// ── Merge & Write to keys.json & keys-vault.json ───────────────────────────────
 const allKeys = isFresh ? generated : [...existingKeys, ...generated];
 writeFileSync('keys.json', JSON.stringify(allKeys, null, 2), 'utf-8');
+writeFileSync('keys-vault.json', JSON.stringify(allKeys, null, 2), 'utf-8');
 
 // ── Output Summary ────────────────────────────────────────────────────────────
 console.log('\n\x1b[32m+--------+----------------------+---------------------------------------+--------+\x1b[0m');
