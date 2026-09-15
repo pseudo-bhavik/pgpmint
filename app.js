@@ -53,148 +53,28 @@ let connectedAddress = null;
 let selectedModalKey = null;
 let quickGeneratedKey= null;
 
-// ── DOM SELECTORS ─────────────────────────────────────────────────────────────
+// ── DOM SELECTOR HELPER ───────────────────────────────────────────────────────
 const $ = function(id) { return document.getElementById(id); };
 
-// Navigation Buttons
-const elModeBtnWallet     = $('mode-btn-wallet');
-const elModeBtnBulk       = $('mode-btn-bulk');
-const elModeBtnVault      = $('mode-btn-vault');
-const elModeBtnAdmin      = $('mode-btn-admin');
-const elModeDescText      = $('mode-desc-text');
-
-// Panels
-const elWalletWrap        = $('wallet-mode-wrap');
-const elBulkWrap          = $('bulk-mode-wrap');
-const elVaultWrap         = $('vault-mode-wrap');
-const elAdminWrap         = $('admin-mode-wrap');
-
-// Wallet Mode Elements
-const elBtnConnect        = $('btn-connect-wallet');
-const elBtnDisconnect     = $('btn-disconnect-wallet');
-const elBtnSwitchNetwork  = $('btn-switch-network');
-const elWcInfo            = $('wc-info');
-const elWcAddress         = $('wc-address');
-const elWcBalance         = $('wc-balance');
-const elWcNetwork         = $('wc-network');
-
-const elWmBtnFetchGas     = $('wm-btn-fetch-gas');
-const elWmGrBase          = $('wm-gr-base');
-const elWmGasStatus       = $('wm-gas-status');
-
-const elWmTabPool         = $('wm-tab-pool');
-const elWmTabGenerate     = $('wm-tab-generate');
-const elWmTabCustom       = $('wm-tab-custom');
-const elWmPoolStatsRow    = $('wm-pool-stats-row');
-const elWmGenerateCard    = $('wm-generate-card');
-const elWmCustomCard      = $('wm-custom-card');
-const elWmCustomTextarea  = $('wm-custom-textarea');
-const elWmBtnQuickGen     = $('wm-btn-quick-gen');
-
-const elWmGpgAvail        = $('wm-gpg-avail');
-const elWmGpgTotal        = $('wm-gpg-total');
-const elWmGpgNext         = $('wm-gpg-next');
-const elWmGpgSource       = $('wm-gpg-source');
-const elPreviewKeyTag     = $('preview-key-tag');
-const elPreviewVaultTag   = $('preview-vault-tag');
-const elPreviewKeyText    = $('preview-key-text');
-
-const elBtnSingleMint     = $('btn-single-mint');
-const elWmMintResult      = $('wm-mint-result');
-const elWmBtnExportKeys   = $('wm-btn-export-keys');
-const elWmBtnDownloadVault= $('wm-btn-download-vault');
-
-// Bulk Mode Elements
-const elRpcUrl            = $('rpc-url');
-const elTxDelay          = $('tx-delay');
-const elBtnFetchGas      = $('btn-fetch-gas');
-const elGrBase           = $('gr-base');
-const elGrPriority       = $('gr-priority');
-const elGrEstCost        = $('gr-est-cost');
-const elGasStatus        = $('gas-status');
-
-const elPkInput          = $('pk-input');
-const elBtnClearPks      = $('btn-clear-pks');
-const elWalletCount      = $('wallet-count');
-const elGpgCount         = $('gpg-count');
-const elGpgTotal         = $('wpg-total');
-const elGpgSource        = $('gpg-source');
-const elGpgDropZone      = $('gpg-drop-zone');
-const elGpgFileInput     = $('gpg-file-input');
-const elDropFilename     = $('drop-filename');
-const elGpgPasteInput    = $('gpg-paste-input');
-
-const elStatWallets      = $('stat-wallets');
-const elStatGpg          = $('stat-gpg');
-const elStatGas          = $('stat-gas');
-const elStatProgress     = $('stat-progress');
-const elStatSuccess      = $('stat-success');
-const elStatFailed       = $('stat-failed');
-const elProgressBar      = $('progress-bar');
-const elBtnInitiate      = $('btn-initiate');
-const elBtnAbort         = $('btn-abort');
-const elAbortNotice      = $('abort-notice');
-const elExecTbody        = $('exec-tbody');
-const elBtnExportKeys    = $('btn-export-keys');
-const elBtnExportCsv     = $('btn-export-csv');
-const elBtnExportBulkVault = $('btn-export-bulk-vault');
-const elBtnClearTable    = $('btn-clear-table');
-
-// Option 3: Generator & Vault Elements
-const elGenCount         = $('gen-count');
-const elGenStyle         = $('gen-style');
-const elGenTimeShuffle   = $('gen-time-shuffle');
-const elBtnRunGenerator  = $('btn-run-generator');
-const elGenProgressBox   = $('gen-progress-box');
-const elGenProgressLabel = $('gen-progress-label');
-const elGenProgressNum   = $('gen-progress-num');
-const elGenProgressBar   = $('gen-progress-bar');
-
-const elVaultStatTotal   = $('vault-stat-total');
-const elVaultStatTriads  = $('vault-stat-triads');
-const elVaultStatUnused  = $('vault-stat-unused');
-const elVaultStatMapped  = $('vault-stat-mapped');
-const elVaultBadgeTotal  = $('vault-badge-total');
-const elBtnDownloadVaultJson = $('btn-download-vault-json');
-const elBtnDownloadVaultTxt  = $('btn-download-vault-txt');
-const elBtnDownloadUnusedJson= $('btn-download-unused-json');
-const elBtnImportVault   = $('btn-import-vault');
-const elFileImportVault  = $('file-import-vault');
-const elBtnClearVault    = $('btn-clear-vault');
-const elVaultSearchInput = $('vault-search-input');
-const elVaultFilteredCount = $('vault-filtered-count');
-const elVaultKeysContainer = $('vault-keys-container');
-
-// Option 4: Admin Registry Elements
-const elAdmStatTotal     = $('adm-stat-total');
-const elAdmStatWallet    = $('adm-stat-wallet');
-const elAdmStatBulk      = $('adm-stat-bulk');
-const elAdmStatPrivSaved = $('adm-stat-priv-saved');
-const elAdmSearchInput   = $('adm-search-input');
-const elAdmTbody         = $('adm-tbody');
-const elAdmBtnExportJson = $('adm-btn-export-json');
-const elAdmBtnExportCsv  = $('adm-btn-export-csv');
-const elAdmBtnExportKeypack = $('adm-btn-export-keypack');
-const elAdmBtnClear      = $('adm-btn-clear');
-
-// Shared Console
-const elConsoleLog       = $('console-log');
-const elBtnClearConsole  = $('btn-clear-console');
-
-// Modal Elements
-const elModalOverlay     = $('key-modal-overlay');
-const elModalTitle       = $('modal-title');
-const elModalClose       = $('modal-btn-close');
-const elModalMetaGrid    = $('modal-meta-grid');
-const elModalTabPub      = $('modal-tab-pub');
-const elModalTabPriv     = $('modal-tab-priv');
-const elModalTabRev      = $('modal-tab-rev');
-const elModalContentText = $('modal-content-text');
-const elModalBtnCopy     = $('modal-btn-copy');
-const elModalBtnDownload = $('modal-btn-download');
-const elModalBtnDownloadAll = $('modal-btn-download-all');
-const elModalCopiedNotice= $('modal-copied-notice');
-let activeModalTab       = 'pub';
+// DOM Element References (bound on init)
+let elModeBtnWallet, elModeBtnBulk, elModeBtnVault, elModeBtnAdmin, elModeDescText;
+let elWalletWrap, elBulkWrap, elVaultWrap, elAdminWrap;
+let elBtnConnect, elBtnDisconnect, elBtnSwitchNetwork, elWcInfo, elWcAddress, elWcBalance, elWcNetwork;
+let elWmBtnFetchGas, elWmGrBase, elWmGasStatus;
+let elWmTabPool, elWmTabGenerate, elWmTabCustom, elWmPoolStatsRow, elWmGenerateCard, elWmCustomCard, elWmCustomTextarea, elWmBtnQuickGen;
+let elWmGpgAvail, elWmGpgTotal, elWmGpgNext, elWmGpgSource, elPreviewKeyTag, elPreviewVaultTag, elPreviewKeyText;
+let elBtnSingleMint, elWmMintResult, elWmBtnExportKeys, elWmBtnDownloadVault;
+let elRpcUrl, elTxDelay, elBtnFetchGas, elGrBase, elGrPriority, elGrEstCost, elGasStatus;
+let elPkInput, elBtnClearPks, elWalletCount, elGpgCount, elGpgTotal, elGpgSource, elGpgDropZone, elGpgFileInput, elDropFilename, elGpgPasteInput;
+let elStatWallets, elStatGpg, elStatGas, elStatProgress, elStatSuccess, elStatFailed, elProgressBar, elBtnInitiate, elBtnAbort, elAbortNotice, elExecTbody;
+let elBtnExportKeys, elBtnExportCsv, elBtnExportBulkVault, elBtnClearTable;
+let elGenCount, elGenStyle, elGenTimeShuffle, elBtnRunGenerator, elGenProgressBox, elGenProgressLabel, elGenProgressNum, elGenProgressBar;
+let elVaultStatTotal, elVaultStatTriads, elVaultStatUnused, elVaultStatMapped, elVaultBadgeTotal;
+let elBtnDownloadVaultJson, elBtnDownloadVaultTxt, elBtnDownloadUnusedJson, elBtnImportVault, elFileImportVault, elBtnClearVault, elVaultSearchInput, elVaultFilteredCount, elVaultKeysContainer;
+let elAdmStatTotal, elAdmStatWallet, elAdmStatBulk, elAdmStatPrivSaved, elAdmSearchInput, elAdmTbody, elAdmBtnExportJson, elAdmBtnExportCsv, elAdmBtnExportKeypack, elAdmBtnClear;
+let elConsoleLog, elBtnClearConsole;
+let elModalOverlay, elModalTitle, elModalClose, elModalMetaGrid, elModalTabPub, elModalTabPriv, elModalTabRev, elModalContentText, elModalBtnCopy, elModalBtnDownload, elModalBtnDownloadAll, elModalCopiedNotice;
+let activeModalTab = 'pub';
 
 // ── NAME & DOMAIN DICTIONARIES ────────────────────────────────────────────────
 const FIRST_NAMES = [
@@ -202,7 +82,7 @@ const FIRST_NAMES = [
   'Lucas', 'Mia', 'Noah', 'Emma', 'Oliver', 'Ava', 'Mateo', 'Camila', 'Sebastian',
   'Aria', 'Julian', 'Chloe', 'Nathan', 'Priya', 'Leo', 'Zoe', 'Gabriel', 'Hannah',
   'Daniel', 'Leila', 'Henry', 'Nora', 'Elijah', 'Mila', 'Samuel', 'Maya', 'Benjamin',
-  'Layla', 'William', 'Harper', 'James', 'Evelyn', 'Benjamin', 'Amelia', 'Lucas'
+  'Layla', 'William', 'Harper', 'James', 'Evelyn', 'Amelia'
 ];
 
 const LAST_NAMES = [
@@ -358,27 +238,27 @@ async function checkKeyUsedOnChain(armoredKey) {
 // ── MODE SWITCHING ────────────────────────────────────────────────────────────
 function switchMode(mode) {
   activeMode = mode;
-  elModeBtnWallet.classList.toggle('active', mode === 'wallet');
-  elModeBtnBulk.classList.toggle('active', mode === 'bulk');
-  elModeBtnVault.classList.toggle('active', mode === 'vault');
-  elModeBtnAdmin.classList.toggle('active', mode === 'admin');
+  if (elModeBtnWallet) elModeBtnWallet.classList.toggle('active', mode === 'wallet');
+  if (elModeBtnBulk)   elModeBtnBulk.classList.toggle('active', mode === 'bulk');
+  if (elModeBtnVault)  elModeBtnVault.classList.toggle('active', mode === 'vault');
+  if (elModeBtnAdmin)  elModeBtnAdmin.classList.toggle('active', mode === 'admin');
 
-  elWalletWrap.style.display = mode === 'wallet' ? 'block' : 'none';
-  elBulkWrap.style.display   = mode === 'bulk'   ? 'block' : 'none';
-  elVaultWrap.style.display  = mode === 'vault'  ? 'block' : 'none';
-  elAdminWrap.style.display  = mode === 'admin'  ? 'block' : 'none';
+  if (elWalletWrap) elWalletWrap.style.display = mode === 'wallet' ? 'block' : 'none';
+  if (elBulkWrap)   elBulkWrap.style.display   = mode === 'bulk'   ? 'block' : 'none';
+  if (elVaultWrap)  elVaultWrap.style.display  = mode === 'vault'  ? 'block' : 'none';
+  if (elAdminWrap)  elAdminWrap.style.display  = mode === 'admin'  ? 'block' : 'none';
 
   if (mode === 'wallet') {
-    elModeDescText.textContent = 'Option 1: Interactive single mint via MetaMask / Browser Wallet (native gas selector)';
+    if (elModeDescText) elModeDescText.textContent = 'Option 1: Interactive single mint via MetaMask / Browser Wallet (native gas selector)';
     fetchWalletGas();
   } else if (mode === 'bulk') {
-    elModeDescText.textContent = 'Option 2: Automated sequential batch loop over burner private keys (autonomous min gas)';
+    if (elModeDescText) elModeDescText.textContent = 'Option 2: Automated sequential batch loop over burner private keys (autonomous min gas)';
     fetchBulkGas();
   } else if (mode === 'vault') {
-    elModeDescText.textContent = 'Option 3: Cryptographic Key Generator & Closed-System Vault (Public, Private, Revocation Triads)';
+    if (elModeDescText) elModeDescText.textContent = 'Option 3: Cryptographic Key Generator & Closed-System Vault (Public, Private, Revocation Triads)';
     renderVaultUi();
   } else if (mode === 'admin') {
-    elModeDescText.textContent = 'Option 4: Master Address-to-PGP Key Registry, Verification & Audit Ledger';
+    if (elModeDescText) elModeDescText.textContent = 'Option 4: Master Address-to-PGP Key Registry, Verification & Audit Ledger';
     renderAdminUi();
   }
 
@@ -387,11 +267,12 @@ function switchMode(mode) {
 
 // ── CRYPTOGRAPHIC VAULT & KEYPAIR ENGINE ──────────────────────────────────────
 async function generateSingleKeypair(identity, keyDate) {
-  if (!openpgp || !openpgp.generateKey) {
+  const pgpLib = window.openpgp || openpgp;
+  if (!pgpLib || !pgpLib.generateKey) {
     throw new Error('OpenPGP.js library not loaded in browser.');
   }
 
-  const { publicKey, privateKey, revocationCertificate } = await openpgp.generateKey({
+  const { publicKey, privateKey, revocationCertificate } = await pgpLib.generateKey({
     type: 'ecc',
     curve: 'curve25519',
     userIDs: [{ name: identity.name, email: identity.email }],
@@ -486,7 +367,6 @@ function loadGpgKeys(keys, sourceName) {
   const unused = getUnusedGpgKeys().length;
   log('Loaded ' + keys.length + ' GPG keys from ' + sourceName + ' (' + unused + ' unused).', 'success');
 
-  // Asynchronously verify next candidate key against on-chain clavisUsed
   verifyNextKeyCandidate();
 }
 
@@ -508,7 +388,6 @@ async function verifyNextKeyCandidate() {
     next.used = true;
     persistUsedKeyId(next.id);
     updateGpgUi();
-    // Recursively check next key
     verifyNextKeyCandidate();
   }
 }
@@ -525,17 +404,19 @@ function updateGpgUi(sourceName) {
 
   if (walletKeySource === 'pool') {
     if (next) {
-      elPreviewKeyTag.textContent = 'KEY #' + next.id + (next.email ? ' (' + next.email + ')' : '');
-      elPreviewKeyText.textContent = next.armoredKey;
+      if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'KEY #' + next.id + (next.email ? ' (' + next.email + ')' : '');
+      if (elPreviewKeyText) elPreviewKeyText.textContent = next.armoredKey;
       const hasTriad = !!next.privateKey && !!next.revocationCertificate;
-      elPreviewVaultTag.style.display = hasTriad ? 'inline-block' : 'none';
-      elPreviewVaultTag.textContent = hasTriad ? '✓ TRIAD IN VAULT' : 'PUBLIC ONLY';
-      if (connectedSigner) elBtnSingleMint.disabled = false;
+      if (elPreviewVaultTag) {
+        elPreviewVaultTag.style.display = hasTriad ? 'inline-block' : 'none';
+        elPreviewVaultTag.textContent = hasTriad ? '✓ TRIAD IN VAULT' : 'PUBLIC ONLY';
+      }
+      if (connectedSigner && elBtnSingleMint) elBtnSingleMint.disabled = false;
     } else {
-      elPreviewKeyTag.textContent = 'NO UNUSED KEYS';
-      elPreviewKeyText.textContent = total > 0 ? '[ All loaded GPG keys have been marked used. Generate more in Option 3! ]' : '[ No keys loaded. ]';
-      elPreviewVaultTag.style.display = 'none';
-      elBtnSingleMint.disabled = true;
+      if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'NO UNUSED KEYS';
+      if (elPreviewKeyText) elPreviewKeyText.textContent = total > 0 ? '[ All loaded GPG keys have been marked used. Generate more in Option 3! ]' : '[ No keys loaded. ]';
+      if (elPreviewVaultTag) elPreviewVaultTag.style.display = 'none';
+      if (elBtnSingleMint) elBtnSingleMint.disabled = true;
     }
   }
 
@@ -568,15 +449,15 @@ async function autoLoadKeys() {
 // ── BATCH IN-BROWSER KEY GENERATOR ────────────────────────────────────────────
 async function runBatchGenerator() {
   if (isGeneratingKeys) return;
-  const count = parseInt(elGenCount.value, 10) || 10;
-  const style = elGenStyle.value || 'realistic';
-  const shuffle = elGenTimeShuffle.value === 'shuffle';
+  const count = parseInt(elGenCount ? elGenCount.value : '10', 10) || 10;
+  const style = elGenStyle ? elGenStyle.value : 'realistic';
+  const shuffle = elGenTimeShuffle ? (elGenTimeShuffle.value === 'shuffle') : true;
 
   isGeneratingKeys = true;
-  elBtnRunGenerator.disabled = true;
-  elGenProgressBox.style.display = 'block';
-  elGenProgressNum.textContent = '0 / ' + count;
-  elGenProgressBar.style.width = '0%';
+  if (elBtnRunGenerator) elBtnRunGenerator.disabled = true;
+  if (elGenProgressBox) elGenProgressBox.style.display = 'block';
+  if (elGenProgressNum) elGenProgressNum.textContent = '0 / ' + count;
+  if (elGenProgressBar) elGenProgressBar.style.width = '0%';
   log('Starting in-browser OpenPGP generator for ' + count + ' keypair(s) (Curve25519 ECC)...', 'info');
 
   const startId = keyVault.length + 1;
@@ -586,9 +467,9 @@ async function runBatchGenerator() {
     const identity = buildIdentity(style);
     const keyDate = getRandomDate(shuffle);
     const currNum = i + 1;
-    elGenProgressLabel.textContent = 'Generating key for ' + identity.name + ' <' + identity.email + '>...';
-    elGenProgressNum.textContent = currNum + ' / ' + count;
-    elGenProgressBar.style.width = ((currNum / count) * 100).toFixed(1) + '%';
+    if (elGenProgressLabel) elGenProgressLabel.textContent = 'Generating key for ' + identity.name + ' <' + identity.email + '>...';
+    if (elGenProgressNum) elGenProgressNum.textContent = currNum + ' / ' + count;
+    if (elGenProgressBar) elGenProgressBar.style.width = ((currNum / count) * 100).toFixed(1) + '%';
 
     try {
       const keys = await generateSingleKeypair(identity, keyDate);
@@ -616,8 +497,8 @@ async function runBatchGenerator() {
 
   const elapsed = ((Date.now() - startT) / 1000).toFixed(2);
   isGeneratingKeys = false;
-  elBtnRunGenerator.disabled = false;
-  elGenProgressLabel.textContent = '✓ ' + count + ' Keypairs generated successfully in ' + elapsed + 's!';
+  if (elBtnRunGenerator) elBtnRunGenerator.disabled = false;
+  if (elGenProgressLabel) elGenProgressLabel.textContent = '✓ ' + count + ' Keypairs generated successfully in ' + elapsed + 's!';
   log('Successfully created ' + count + ' cryptographic keypairs in ' + elapsed + 's. Added to Vault.', 'success');
 
   updateGpgUi('In-Browser Vault Generator');
@@ -778,7 +659,7 @@ window.openKeyModal = function(keyId) {
     return;
   }
   selectedModalKey = item;
-  elModalTitle.textContent = '🔒 Cryptographic Inspector — Key #' + item.id + (item.email ? ' (' + item.email + ')' : '');
+  if (elModalTitle) elModalTitle.textContent = '🔒 Cryptographic Inspector — Key #' + item.id + (item.email ? ' (' + item.email + ')' : '');
 
   let metaHtml = '';
   metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Key ID</span><span class="modal-meta-v">#' + item.id + '</span></div>';
@@ -787,19 +668,19 @@ window.openKeyModal = function(keyId) {
   metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Creation Date</span><span class="modal-meta-v">' + (item.createdAt || '-') + '</span></div>';
   metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Mapped Wallet</span><span class="modal-meta-v code-green">' + (item.usedByAddress || 'Unassigned') + '</span></div>';
   metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Token ID / Tx</span><span class="modal-meta-v amber">' + (item.tokenId ? ('#' + item.tokenId) : (item.txHash ? item.txHash.substring(0, 16) + '...' : '-')) + '</span></div>';
-  elModalMetaGrid.innerHTML = metaHtml;
+  if (elModalMetaGrid) elModalMetaGrid.innerHTML = metaHtml;
 
   setModalTab('pub');
-  elModalOverlay.style.display = 'flex';
+  if (elModalOverlay) elModalOverlay.style.display = 'flex';
 };
 
 function setModalTab(tab) {
   activeModalTab = tab;
-  elModalTabPub.classList.toggle('active', tab === 'pub');
-  elModalTabPriv.classList.toggle('active', tab === 'priv');
-  elModalTabRev.classList.toggle('active', tab === 'rev');
+  if (elModalTabPub) elModalTabPub.classList.toggle('active', tab === 'pub');
+  if (elModalTabPriv) elModalTabPriv.classList.toggle('active', tab === 'priv');
+  if (elModalTabRev) elModalTabRev.classList.toggle('active', tab === 'rev');
 
-  if (!selectedModalKey) return;
+  if (!selectedModalKey || !elModalContentText) return;
   if (tab === 'pub') {
     elModalContentText.value = selectedModalKey.armoredKey || '[ No Public Key ]';
   } else if (tab === 'priv') {
@@ -912,8 +793,10 @@ async function connectBrowserWallet() {
   }
 
   try {
-    elBtnConnect.disabled = true;
-    elBtnConnect.textContent = 'CONNECTING...';
+    if (elBtnConnect) {
+      elBtnConnect.disabled = true;
+      elBtnConnect.textContent = 'CONNECTING...';
+    }
     browserProvider = new ethers.BrowserProvider(window.ethereum);
     const network = await browserProvider.getNetwork();
 
@@ -937,7 +820,7 @@ async function connectBrowserWallet() {
     if (elBtnDisconnect) elBtnDisconnect.style.display = 'inline-block';
     if (elBtnSwitchNetwork) elBtnSwitchNetwork.style.display = 'none';
 
-    elBtnSingleMint.disabled = false;
+    if (elBtnSingleMint) elBtnSingleMint.disabled = false;
     log('Connected wallet: ' + connectedAddress + ' (' + parseFloat(balEth).toFixed(5) + ' ETH)', 'success');
     fetchWalletGas();
     verifyNextKeyCandidate();
@@ -992,14 +875,13 @@ async function executeSingleMint() {
       alert('No unused GPG keys available in pool. Generate one with the generator tab or load keys.json.');
       return;
     }
-    // Final on-chain check
     const isUsed = await checkKeyUsedOnChain(chosenKey.armoredKey);
     if (isUsed) {
       log('Active key #' + chosenKey.id + ' is already used on-chain! Skipping...', 'warn');
       chosenKey.used = true;
       persistUsedKeyId(chosenKey.id);
       updateGpgUi();
-      executeSingleMint(); // retry with next key
+      executeSingleMint();
       return;
     }
   } else if (walletKeySource === 'generate') {
@@ -1047,14 +929,12 @@ async function executeSingleMint() {
     const blockNum = receipt.blockNumber;
     const gasUsed = receipt.gasUsed.toString();
 
-    // Mark key as used & persist
     chosenKey.used = true;
     chosenKey.usedByAddress = connectedAddress;
     chosenKey.txHash = tx.hash;
     chosenKey.mode = 'wallet';
     persistUsedKeyId(chosenKey.id);
 
-    // Parse Token ID if available from Visus event
     let tokenId = null;
     if (receipt.logs) {
       for (const lg of receipt.logs) {
@@ -1069,7 +949,6 @@ async function executeSingleMint() {
     }
     chosenKey.tokenId = tokenId;
 
-    // Record in Master Admin Registry
     recordAdminMint({
       id: adminRegistry.length + 1,
       walletAddress: connectedAddress,
@@ -1090,12 +969,10 @@ async function executeSingleMint() {
       timestamp: new Date().toISOString()
     });
 
-    // Reset quick generated key if used
     if (walletKeySource === 'generate') {
       quickGeneratedKey = null;
     }
 
-    // Update UI immediately advancing to next unused key
     updateGpgUi();
     renderVaultUi();
 
@@ -1140,8 +1017,10 @@ async function executeSingleMint() {
 async function runQuickWalletGenerator() {
   if (isGeneratingKeys) return;
   isGeneratingKeys = true;
-  elWmBtnQuickGen.disabled = true;
-  elWmBtnQuickGen.textContent = 'GENERATING...';
+  if (elWmBtnQuickGen) {
+    elWmBtnQuickGen.disabled = true;
+    elWmBtnQuickGen.textContent = 'GENERATING...';
+  }
 
   try {
     const identity = buildIdentity('realistic');
@@ -1167,19 +1046,23 @@ async function runQuickWalletGenerator() {
     addToVault(quickGeneratedKey);
     renderVaultUi();
 
-    elPreviewKeyTag.textContent = '⚡ FRESH KEY #' + newId + ' (' + identity.email + ')';
-    elPreviewKeyText.textContent = quickGeneratedKey.armoredKey;
-    elPreviewVaultTag.style.display = 'inline-block';
-    elPreviewVaultTag.textContent = '✓ TRIAD IN VAULT';
+    if (elPreviewKeyTag) elPreviewKeyTag.textContent = '⚡ FRESH KEY #' + newId + ' (' + identity.email + ')';
+    if (elPreviewKeyText) elPreviewKeyText.textContent = quickGeneratedKey.armoredKey;
+    if (elPreviewVaultTag) {
+      elPreviewVaultTag.style.display = 'inline-block';
+      elPreviewVaultTag.textContent = '✓ TRIAD IN VAULT';
+    }
 
-    if (connectedSigner) elBtnSingleMint.disabled = false;
+    if (connectedSigner && elBtnSingleMint) elBtnSingleMint.disabled = false;
     log('Generated fresh OpenPGP keypair for ' + identity.name + ' <' + identity.email + '> (Key #' + newId + '). Vault ready.', 'success');
   } catch (err) {
     log('Quick generator failed: ' + err.message, 'error');
   } finally {
     isGeneratingKeys = false;
-    elWmBtnQuickGen.disabled = false;
-    elWmBtnQuickGen.textContent = 'GENERATE NEW KEYPAIR NOW';
+    if (elWmBtnQuickGen) {
+      elWmBtnQuickGen.disabled = false;
+      elWmBtnQuickGen.textContent = 'GENERATE NEW KEYPAIR NOW';
+    }
   }
 }
 
@@ -1208,8 +1091,8 @@ async function runBulkBatchSequence() {
 
   isBatchRunning = true;
   abortFlag = false;
-  elBtnInitiate.disabled = true;
-  elBtnAbort.disabled = false;
+  if (elBtnInitiate) elBtnInitiate.disabled = true;
+  if (elBtnAbort) elBtnAbort.disabled = false;
   if (elAbortNotice) elAbortNotice.style.display = 'none';
 
   let successCount = 0;
@@ -1263,13 +1146,12 @@ async function runBulkBatchSequence() {
       addToVault(gpgKey);
     }
 
-    // Verify key on-chain before sending
     const isUsed = await checkKeyUsedOnChain(gpgKey.armoredKey);
     if (isUsed) {
       log('[' + currNum + '/' + total + '] Key #' + gpgKey.id + ' is already used on-chain! Skipping...', 'warn');
       gpgKey.used = true;
       persistUsedKeyId(gpgKey.id);
-      i--; // repeat current wallet with next key
+      i--;
       continue;
     }
 
@@ -1366,8 +1248,8 @@ async function runBulkBatchSequence() {
   }
 
   isBatchRunning = false;
-  elBtnInitiate.disabled = false;
-  elBtnAbort.disabled = true;
+  if (elBtnInitiate) elBtnInitiate.disabled = false;
+  if (elBtnAbort) elBtnAbort.disabled = true;
   log('Batch run complete: ' + successCount + ' succeeded, ' + failCount + ' failed/skipped.', 'success');
   renderVaultUi();
   renderAdminUi();
@@ -1476,10 +1358,141 @@ function exportAdminCsv() {
   log('Exported Admin Registry CSV (' + adminRegistry.length + ' rows).', 'success');
 }
 
-// ── EVENT LISTENERS & INITIALIZATION ───────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  log('Initializing they · seen Autonomous Engine & Cryptographic Vault v4.1...', 'info');
+// ── BIND DOM & ATTACH LISTENERS ───────────────────────────────────────────────
+function bindElements() {
+  elModeBtnWallet     = $('mode-btn-wallet');
+  elModeBtnBulk       = $('mode-btn-bulk');
+  elModeBtnVault      = $('mode-btn-vault');
+  elModeBtnAdmin      = $('mode-btn-admin');
+  elModeDescText      = $('mode-desc-text');
 
+  elWalletWrap        = $('wallet-mode-wrap');
+  elBulkWrap          = $('bulk-mode-wrap');
+  elVaultWrap         = $('vault-mode-wrap');
+  elAdminWrap         = $('admin-mode-wrap');
+
+  elBtnConnect        = $('btn-connect-wallet');
+  elBtnDisconnect     = $('btn-disconnect-wallet');
+  elBtnSwitchNetwork  = $('btn-switch-network');
+  elWcInfo            = $('wc-info');
+  elWcAddress         = $('wc-address');
+  elWcBalance         = $('wc-balance');
+  elWcNetwork         = $('wc-network');
+
+  elWmBtnFetchGas     = $('wm-btn-fetch-gas');
+  elWmGrBase          = $('wm-gr-base');
+  elWmGasStatus       = $('wm-gas-status');
+
+  elWmTabPool         = $('wm-tab-pool');
+  elWmTabGenerate     = $('wm-tab-generate');
+  elWmTabCustom       = $('wm-tab-custom');
+  elWmPoolStatsRow    = $('wm-pool-stats-row');
+  elWmGenerateCard    = $('wm-generate-card');
+  elWmCustomCard      = $('wm-custom-card');
+  elWmCustomTextarea  = $('wm-custom-textarea');
+  elWmBtnQuickGen     = $('wm-btn-quick-gen');
+
+  elWmGpgAvail        = $('wm-gpg-avail');
+  elWmGpgTotal        = $('wm-gpg-total');
+  elWmGpgNext         = $('wm-gpg-next');
+  elWmGpgSource       = $('wm-gpg-source');
+  elPreviewKeyTag     = $('preview-key-tag');
+  elPreviewVaultTag   = $('preview-vault-tag');
+  elPreviewKeyText    = $('preview-key-text');
+
+  elBtnSingleMint     = $('btn-single-mint');
+  elWmMintResult      = $('wm-mint-result');
+  elWmBtnExportKeys   = $('wm-btn-export-keys');
+  elWmBtnDownloadVault= $('wm-btn-download-vault');
+
+  elRpcUrl            = $('rpc-url');
+  elTxDelay          = $('tx-delay');
+  elBtnFetchGas      = $('btn-fetch-gas');
+  elGrBase           = $('gr-base');
+  elGrPriority       = $('gr-priority');
+  elGrEstCost        = $('gr-est-cost');
+  elGasStatus        = $('gas-status');
+
+  elPkInput          = $('pk-input');
+  elBtnClearPks      = $('btn-clear-pks');
+  elWalletCount      = $('wallet-count');
+  elGpgCount         = $('gpg-count');
+  elGpgTotal         = $('wpg-total');
+  elGpgSource        = $('gpg-source');
+  elGpgDropZone      = $('gpg-drop-zone');
+  elGpgFileInput     = $('gpg-file-input');
+  elDropFilename     = $('drop-filename');
+  elGpgPasteInput    = $('gpg-paste-input');
+
+  elStatWallets      = $('stat-wallets');
+  elStatGpg          = $('stat-gpg');
+  elStatGas          = $('stat-gas');
+  elStatProgress     = $('stat-progress');
+  elStatSuccess      = $('stat-success');
+  elStatFailed       = $('stat-failed');
+  elProgressBar      = $('progress-bar');
+  elBtnInitiate      = $('btn-initiate');
+  elBtnAbort         = $('btn-abort');
+  elAbortNotice      = $('abort-notice');
+  elExecTbody        = $('exec-tbody');
+  elBtnExportKeys    = $('btn-export-keys');
+  elBtnExportCsv     = $('btn-export-csv');
+  elBtnExportBulkVault = $('btn-export-bulk-vault');
+  elBtnClearTable    = $('btn-clear-table');
+
+  elGenCount         = $('gen-count');
+  elGenStyle         = $('gen-style');
+  elGenTimeShuffle   = $('gen-time-shuffle');
+  elBtnRunGenerator  = $('btn-run-generator');
+  elGenProgressBox   = $('gen-progress-box');
+  elGenProgressLabel = $('gen-progress-label');
+  elGenProgressNum   = $('gen-progress-num');
+  elGenProgressBar   = $('gen-progress-bar');
+
+  elVaultStatTotal   = $('vault-stat-total');
+  elVaultStatTriads  = $('vault-stat-triads');
+  elVaultStatUnused  = $('vault-stat-unused');
+  elVaultStatMapped  = $('vault-stat-mapped');
+  elVaultBadgeTotal  = $('vault-badge-total');
+  elBtnDownloadVaultJson = $('btn-download-vault-json');
+  elBtnDownloadVaultTxt  = $('btn-download-vault-txt');
+  elBtnDownloadUnusedJson= $('btn-download-unused-json');
+  elBtnImportVault   = $('btn-import-vault');
+  elFileImportVault  = $('file-import-vault');
+  elBtnClearVault    = $('btn-clear-vault');
+  elVaultSearchInput = $('vault-search-input');
+  elVaultFilteredCount = $('vault-filtered-count');
+  elVaultKeysContainer = $('vault-keys-container');
+
+  elAdmStatTotal     = $('adm-stat-total');
+  elAdmStatWallet    = $('adm-stat-wallet');
+  elAdmStatBulk      = $('adm-stat-bulk');
+  elAdmStatPrivSaved = $('adm-stat-priv-saved');
+  elAdmSearchInput   = $('adm-search-input');
+  elAdmTbody         = $('adm-tbody');
+  elAdmBtnExportJson = $('adm-btn-export-json');
+  elAdmBtnExportCsv  = $('adm-btn-export-csv');
+  elAdmBtnExportKeypack = $('adm-btn-export-keypack');
+  elAdmBtnClear      = $('adm-btn-clear');
+
+  elConsoleLog       = $('console-log');
+  elBtnClearConsole  = $('btn-clear-console');
+
+  elModalOverlay     = $('key-modal-overlay');
+  elModalTitle       = $('modal-title');
+  elModalClose       = $('modal-btn-close');
+  elModalMetaGrid    = $('modal-meta-grid');
+  elModalTabPub      = $('modal-tab-pub');
+  elModalTabPriv     = $('modal-tab-priv');
+  elModalTabRev      = $('modal-tab-rev');
+  elModalContentText = $('modal-content-text');
+  elModalBtnCopy     = $('modal-btn-copy');
+  elModalBtnDownload = $('modal-btn-download');
+  elModalBtnDownloadAll = $('modal-btn-download-all');
+  elModalCopiedNotice= $('modal-copied-notice');
+}
+
+function attachListeners() {
   if (elModeBtnWallet) elModeBtnWallet.addEventListener('click', function() { switchMode('wallet'); });
   if (elModeBtnBulk)   elModeBtnBulk.addEventListener('click', function() { switchMode('bulk'); });
   if (elModeBtnVault)  elModeBtnVault.addEventListener('click', function() { switchMode('vault'); });
@@ -1490,9 +1503,9 @@ document.addEventListener('DOMContentLoaded', function() {
     elWmTabPool.classList.add('active');
     elWmTabGenerate.classList.remove('active');
     elWmTabCustom.classList.remove('active');
-    elWmPoolStatsRow.style.display = 'grid';
-    elWmGenerateCard.style.display = 'none';
-    elWmCustomCard.style.display = 'none';
+    if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'grid';
+    if (elWmGenerateCard) elWmGenerateCard.style.display = 'none';
+    if (elWmCustomCard) elWmCustomCard.style.display = 'none';
     updateGpgUi();
   });
 
@@ -1501,9 +1514,9 @@ document.addEventListener('DOMContentLoaded', function() {
     elWmTabPool.classList.remove('active');
     elWmTabGenerate.classList.add('active');
     elWmTabCustom.classList.remove('active');
-    elWmPoolStatsRow.style.display = 'none';
-    elWmGenerateCard.style.display = 'block';
-    elWmCustomCard.style.display = 'none';
+    if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'none';
+    if (elWmGenerateCard) elWmGenerateCard.style.display = 'block';
+    if (elWmCustomCard) elWmCustomCard.style.display = 'none';
     if (!quickGeneratedKey) runQuickWalletGenerator();
   });
 
@@ -1512,19 +1525,19 @@ document.addEventListener('DOMContentLoaded', function() {
     elWmTabPool.classList.remove('active');
     elWmTabGenerate.classList.remove('active');
     elWmTabCustom.classList.add('active');
-    elWmPoolStatsRow.style.display = 'none';
-    elWmGenerateCard.style.display = 'none';
-    elWmCustomCard.style.display = 'block';
-    elPreviewKeyTag.textContent = 'CUSTOM PASTED KEY';
-    elPreviewVaultTag.style.display = 'none';
-    elPreviewKeyText.textContent = elWmCustomTextarea.value || '[ Please paste armored key above ]';
+    if (elWmPoolStatsRow) elWmPoolStatsRow.style.display = 'none';
+    if (elWmGenerateCard) elWmGenerateCard.style.display = 'none';
+    if (elWmCustomCard) elWmCustomCard.style.display = 'block';
+    if (elPreviewKeyTag) elPreviewKeyTag.textContent = 'CUSTOM PASTED KEY';
+    if (elPreviewVaultTag) elPreviewVaultTag.style.display = 'none';
+    if (elPreviewKeyText) elPreviewKeyText.textContent = (elWmCustomTextarea ? elWmCustomTextarea.value : '') || '[ Please paste armored key above ]';
   });
 
   if (elWmCustomTextarea) elWmCustomTextarea.addEventListener('input', function() {
     if (walletKeySource === 'custom') {
-      elPreviewKeyText.textContent = elWmCustomTextarea.value || '[ Please paste armored key above ]';
+      if (elPreviewKeyText) elPreviewKeyText.textContent = elWmCustomTextarea.value || '[ Please paste armored key above ]';
       if (connectedSigner && elWmCustomTextarea.value.includes('-----BEGIN PGP PUBLIC KEY BLOCK-----')) {
-        elBtnSingleMint.disabled = false;
+        if (elBtnSingleMint) elBtnSingleMint.disabled = false;
       }
     }
   });
@@ -1633,7 +1646,18 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   if (elBtnClearConsole) elBtnClearConsole.addEventListener('click', logClear);
+}
 
+function init() {
+  bindElements();
+  attachListeners();
+  log('Initializing they · seen Autonomous Engine & Cryptographic Vault v4.1...', 'info');
   autoLoadKeys();
   fetchWalletGas();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
