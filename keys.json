@@ -4,7 +4,9 @@
     "name": "Maya Morales",
     "email": "maya.morales81@pm.me",
     "armoredKey": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nxjMEaqfIqBYJKwYBBAHaRw8BAQdAXlF7M9km+Xw2jdgUNy+Rbesa5iFe5bxU\nOo3nqPL2RJrNI01heWEgTW9yYWxlcyA8bWF5YS5tb3JhbGVzODFAcG0ubWU+\nwowEEBYKAD4FgmqnyKgECwkHCAmQUsYFEcWRaYcDFQgKBBYAAgECGQECmwMC\nHgEWIQReBSxgvG9NAgQMwPZSxgURxZFphwAAwxQA/0VWMV05HLwf5eSf91lU\niu0OFpIdQjY0dazOS6af8BpxAP9Ht0dSWTbBai3C7kO+szMNa8+u+qfQYFLi\nSUfYv3Q4Dc44BGqnyKgSCisGAQQBl1UBBQEBB0CRr7qOW5IjlEzLDbTCfAKc\nYs4O0CXmZ/6xf/F+DHgDUwMBCAfCeAQYFgoAKgWCaqfIqAmQUsYFEcWRaYcC\nmwwWIQReBSxgvG9NAgQMwPZSxgURxZFphwAAI5AA+gN8xQHVQOMpwc8d3/iv\nG7t6gkPHjWdZpM/EXURNz5buAQCrHrTu94D3c7sz9qge4jf7Za39ijk1nfqo\nrEOSfyP0Bw==\n=Om5L\n-----END PGP PUBLIC KEY BLOCK-----\n",
-    "used": false
+    "used": true,
+    "usedByAddress": "0x86865f4bAfF28EeF6aAfEDAc533e7A6a7fe67013",
+    "tokenId": 78284
   },
   {
     "id": 2,

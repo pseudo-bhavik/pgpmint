@@ -1,5 +1,5 @@
 /**
- * app.js — they · seen Autonomous Engine & Cryptographic Vault v4.0
+ * app.js — they · seen Autonomous Engine & Cryptographic Vault v4.1
  * 100% Client-Side · Ethereum Mainnet (Chain ID: 1)
  * Target Contract: 0x3286e6525A38cD1d277ECaF435b156c0cc892C29
  * Target Method: Function #9 seen(string pgp) [Selector: 0x363355d2]
@@ -12,6 +12,7 @@ const openpgp = window.openpgp;
 const CONTRACT_ADDRESS      = '0x3286e6525A38cD1d277ECaF435b156c0cc892C29';
 const CONTRACT_ABI          = [
   'function seen(string pgp) public',
+  'function clavisUsed(bytes32) view returns (bool)',
   'function auris(uint256) view returns (bool)',
   'function sera(uint256) view returns (bool)',
   'function fur(uint256) view returns (bool)',
@@ -25,15 +26,20 @@ const TARGET_SELECTOR       = '0x363355d2';
 const CHAIN_ID              = 1n;
 const DEFAULT_RPC           = 'https://ethereum-rpc.publicnode.com';
 
+const STORAGE_KEY_USED      = 'they_seen_used_ids_v4';
+const STORAGE_KEY_VAULT     = 'they_seen_vault_v4';
+const STORAGE_KEY_ADMIN     = 'they_seen_admin_v4';
+
 // Minimum Safe Gas Settings for Autonomous Burner Wallets (Ethereum Mainnet)
 const MIN_SAFE_PRIORITY_GWEI = '0.05';
 const DEFAULT_GAS_LIMIT      = 80000n;
 
-// ── STATE VARIABLES (TRANSIENT IN-MEMORY VAULT) ────────────────────────────────
+// ── STATE VARIABLES ───────────────────────────────────────────────────────────
 let gpgKeyPool       = [];       // Active pool of keys for minting
 let keyVault         = [];       // Master Cryptographic Vault (Public, Private, Revocation)
 let adminRegistry    = [];       // Master Address <-> Key <-> Tx mapping registry
-let runLog           = [];       // Bulk execution run log
+let usedKeyIdsSet    = new Set();// Set of used key IDs (persisted in localStorage)
+let runLog           = [];
 let abortFlag        = false;
 let isBatchRunning   = false;
 let isGeneratingKeys = false;
@@ -45,7 +51,7 @@ let connectedSigner  = null;
 let connectedAddress = null;
 
 let selectedModalKey = null;
-let customPastedKey  = '';
+let quickGeneratedKey= null;
 
 // ── DOM SELECTORS ─────────────────────────────────────────────────────────────
 const $ = function(id) { return document.getElementById(id); };
@@ -190,32 +196,26 @@ const elModalBtnDownloadAll = $('modal-btn-download-all');
 const elModalCopiedNotice= $('modal-copied-notice');
 let activeModalTab       = 'pub';
 
-// ── NAME & DOMAIN DICTIONARIES FOR REALISTIC IDENTITIES ────────────────────────
+// ── NAME & DOMAIN DICTIONARIES ────────────────────────────────────────────────
 const FIRST_NAMES = [
   'Alexander', 'Sophia', 'Marcus', 'Elena', 'Liam', 'Olivia', 'Ethan', 'Isabella',
   'Lucas', 'Mia', 'Noah', 'Emma', 'Oliver', 'Ava', 'Mateo', 'Camila', 'Sebastian',
   'Aria', 'Julian', 'Chloe', 'Nathan', 'Priya', 'Leo', 'Zoe', 'Gabriel', 'Hannah',
   'Daniel', 'Leila', 'Henry', 'Nora', 'Elijah', 'Mila', 'Samuel', 'Maya', 'Benjamin',
-  'Layla', 'William', 'Harper', 'James', 'Evelyn', 'Benjamin', 'Amelia', 'Lucas',
-  'Abigail', 'Mason', 'Emily', 'Theodore', 'Elizabeth', 'Jack', 'Sofia', 'Levi',
-  'Avery', 'Ella', 'Jackson', 'Scarlett', 'Owen', 'Grace', 'Kai', 'Victoria', 'Connor'
+  'Layla', 'William', 'Harper', 'James', 'Evelyn', 'Benjamin', 'Amelia', 'Lucas'
 ];
 
 const LAST_NAMES = [
   'Vance', 'Rostova', 'Chen', 'Morales', 'Dubois', 'Sterling', 'Novak', 'Tanaka',
   'Lindqvist', 'Mercer', 'Kowalski', 'Sinclair', 'Hartmann', 'Nakamura', 'Moreau',
   'Fischer', 'Gomez', 'Weber', 'Becker', 'Hoffmann', 'Schulz', 'Wagner', 'Ricci',
-  'Marino', 'Costa', 'Santos', 'Silva', 'Ferreira', 'Alvarez', 'Romero', 'Torres',
-  'Flores', 'Castillo', 'Rivera', 'Vasquez', 'Soto', 'Contreras', 'Larsson', 'Berg',
-  'Nilsson', 'Holm', 'Dahl', 'Hansen', 'Jensen', 'Pedersen', 'Nielsen', 'Muller',
-  'Schmidt', 'Schneider', 'Meyer', 'Schatz', 'Baumann', 'Kruger', 'Keller', 'Vogel'
+  'Marino', 'Costa', 'Santos', 'Silva', 'Ferreira', 'Alvarez', 'Romero', 'Torres'
 ];
 
 const DOMAINS_PUBLIC = [
   'gmail.com', 'outlook.com', 'proton.me', 'pm.me', 'icloud.com', 'yahoo.com', 'zoho.com',
   'mailfence.com', 'tuta.io', 'fastmail.com', 'mailbox.org', 'posteo.de', 'gmx.com',
-  'devmail.io', 'coder.net', 'bytehub.org', 'techflow.io', 'sysops.dev', 'cloudnative.cc',
-  'stackvibe.net', 'nodeworks.io', 'hashlabs.org', 'cryptomail.ch', 'vaultsec.io'
+  'devmail.io', 'coder.net', 'bytehub.org', 'techflow.io', 'sysops.dev', 'cloudnative.cc'
 ];
 
 // ── UTILITIES ─────────────────────────────────────────────────────────────────
@@ -270,31 +270,16 @@ function buildIdentity(style) {
       email: 'anon_' + hex.toLowerCase() + '@vault.local'
     };
   }
-  if (style === 'dev') {
-    const f = randomItem(FIRST_NAMES).toLowerCase();
-    const l = randomItem(LAST_NAMES).toLowerCase();
-    const prefix = ['dev', 'sys', 'sec', 'ops', 'node', 'core', 'stack'][Math.floor(Math.random() * 7)];
-    const dom = ['devmail.io', 'sysops.dev', 'coder.net', 'nodeworks.io', 'vaultsec.io'][Math.floor(Math.random() * 5)];
-    return {
-      name: prefix.toUpperCase() + ' ' + f.toUpperCase(),
-      email: prefix + '.' + f + '@' + dom
-    };
-  }
-
-  // Realistic pattern (12 varieties)
   const fn = randomItem(FIRST_NAMES);
   const ln = randomItem(LAST_NAMES);
   const dom = randomItem(DOMAINS_PUBLIC);
   const fLower = fn.toLowerCase();
   const lLower = ln.toLowerCase();
-  const p = randomNum(1, 10);
+  const p = randomNum(1, 6);
   let userHandle = fLower + '.' + lLower;
   if (p === 2) userHandle = fLower.charAt(0) + lLower;
   else if (p === 3) userHandle = fLower + '_' + lLower;
   else if (p === 4) userHandle = fLower + '.' + lLower + randomNum(78, 99);
-  else if (p === 5) userHandle = fLower + lLower;
-  else if (p === 6) userHandle = fLower + '.' + fLower.charAt(0) + '.' + lLower;
-
   return {
     name: fn + ' ' + ln,
     email: userHandle + '@' + dom
@@ -303,7 +288,7 @@ function buildIdentity(style) {
 
 function getRandomDate(shuffle) {
   if (!shuffle) return new Date();
-  const maxPastMs = 10 * 60 * 60 * 1000; // 10 hours
+  const maxPastMs = 10 * 60 * 60 * 1000;
   const offset = Math.floor(Math.random() * maxPastMs);
   return new Date(Date.now() - offset);
 }
@@ -318,6 +303,56 @@ function triggerDownload(filename, content, mimeType) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ── LOCAL STORAGE PERSISTENCE ─────────────────────────────────────────────────
+function loadPersistedState() {
+  try {
+    const rawUsed = localStorage.getItem(STORAGE_KEY_USED);
+    if (rawUsed) {
+      const arr = JSON.parse(rawUsed);
+      if (Array.isArray(arr)) {
+        arr.forEach(function(id) { usedKeyIdsSet.add(Number(id)); });
+      }
+    }
+  } catch (_) {}
+
+  try {
+    const rawAdmin = localStorage.getItem(STORAGE_KEY_ADMIN);
+    if (rawAdmin) {
+      const arr = JSON.parse(rawAdmin);
+      if (Array.isArray(arr)) {
+        adminRegistry = arr;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistUsedKeyId(keyId) {
+  if (keyId === undefined || keyId === null) return;
+  usedKeyIdsSet.add(Number(keyId));
+  try {
+    localStorage.setItem(STORAGE_KEY_USED, JSON.stringify(Array.from(usedKeyIdsSet)));
+  } catch (_) {}
+}
+
+function persistAdminRegistry() {
+  try {
+    localStorage.setItem(STORAGE_KEY_ADMIN, JSON.stringify(adminRegistry));
+  } catch (_) {}
+}
+
+// ── ON-CHAIN CLAVIS USED VERIFICATION ─────────────────────────────────────────
+async function checkKeyUsedOnChain(armoredKey) {
+  if (!armoredKey) return false;
+  try {
+    const provider = browserProvider || new ethers.JsonRpcProvider(DEFAULT_RPC, 1);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+    const keyHash = ethers.keccak256(ethers.toUtf8Bytes(armoredKey));
+    return await contract.clavisUsed(keyHash);
+  } catch (_) {
+    return false;
+  }
 }
 
 // ── MODE SWITCHING ────────────────────────────────────────────────────────────
@@ -380,12 +415,15 @@ function addToVault(keyEntry) {
     keyVault.push(keyEntry);
   }
 
-  // Also sync to active gpgKeyPool if not already present
   const poolIdx = gpgKeyPool.findIndex(function(k) { return k.id === keyEntry.id || (k.armoredKey && k.armoredKey === keyEntry.armoredKey); });
   if (poolIdx !== -1) {
     gpgKeyPool[poolIdx] = Object.assign({}, gpgKeyPool[poolIdx], keyEntry);
   } else {
     gpgKeyPool.push(keyEntry);
+  }
+
+  if (keyEntry.used) {
+    persistUsedKeyId(keyEntry.id);
   }
 
   updateVaultCounters();
@@ -394,8 +432,8 @@ function addToVault(keyEntry) {
 function updateVaultCounters() {
   const total = keyVault.length;
   const triads = keyVault.filter(function(k) { return !!k.privateKey && !!k.revocationCertificate; }).length;
-  const unused = keyVault.filter(function(k) { return !k.used; }).length;
-  const mapped = keyVault.filter(function(k) { return !!k.usedByAddress; }).length;
+  const unused = keyVault.filter(function(k) { return !k.used && !usedKeyIdsSet.has(k.id); }).length;
+  const mapped = keyVault.filter(function(k) { return !!k.usedByAddress || k.used || usedKeyIdsSet.has(k.id); }).length;
 
   if (elVaultStatTotal)  elVaultStatTotal.textContent  = total;
   if (elVaultStatTriads) elVaultStatTriads.textContent = triads;
@@ -422,12 +460,14 @@ function parseGpgJson(raw) {
 function loadGpgKeys(keys, sourceName) {
   sourceName = sourceName || 'keys.json';
   keys.forEach(function(curr, idx) {
+    const id = curr.id !== undefined ? curr.id : (idx + 1);
+    const isUsed = !!curr.used || usedKeyIdsSet.has(Number(id));
     const item = {
-      id: curr.id !== undefined ? curr.id : (idx + 1),
+      id: id,
       armoredKey: curr.armoredKey,
       privateKey: curr.privateKey || '',
       revocationCertificate: curr.revocationCertificate || '',
-      used: !!curr.used,
+      used: isUsed,
       inProgress: false,
       name: curr.name || '',
       email: curr.email || '',
@@ -445,14 +485,32 @@ function loadGpgKeys(keys, sourceName) {
   renderAdminUi();
   const unused = getUnusedGpgKeys().length;
   log('Loaded ' + keys.length + ' GPG keys from ' + sourceName + ' (' + unused + ' unused).', 'success');
+
+  // Asynchronously verify next candidate key against on-chain clavisUsed
+  verifyNextKeyCandidate();
 }
 
 function getUnusedGpgKeys() {
-  return gpgKeyPool.filter(function(k) { return !k.used && !k.inProgress; });
+  return gpgKeyPool.filter(function(k) { return !k.used && !usedKeyIdsSet.has(k.id) && !k.inProgress; });
 }
 
 function getNextUnusedKey() {
-  return gpgKeyPool.find(function(k) { return !k.used && !k.inProgress; }) || null;
+  return gpgKeyPool.find(function(k) { return !k.used && !usedKeyIdsSet.has(k.id) && !k.inProgress; }) || null;
+}
+
+async function verifyNextKeyCandidate() {
+  const next = getNextUnusedKey();
+  if (!next) return;
+
+  const isUsedOnChain = await checkKeyUsedOnChain(next.armoredKey);
+  if (isUsedOnChain) {
+    log('Key #' + next.id + ' (' + next.email + ') is already used on-chain (clavisUsed = true). Auto-advancing...', 'warn');
+    next.used = true;
+    persistUsedKeyId(next.id);
+    updateGpgUi();
+    // Recursively check next key
+    verifyNextKeyCandidate();
+  }
 }
 
 function updateGpgUi(sourceName) {
@@ -475,7 +533,7 @@ function updateGpgUi(sourceName) {
       if (connectedSigner) elBtnSingleMint.disabled = false;
     } else {
       elPreviewKeyTag.textContent = 'NO UNUSED KEYS';
-      elPreviewKeyText.textContent = total > 0 ? '[ All loaded GPG keys have been marked used. ]' : '[ No keys loaded. ]';
+      elPreviewKeyText.textContent = total > 0 ? '[ All loaded GPG keys have been marked used. Generate more in Option 3! ]' : '[ No keys loaded. ]';
       elPreviewVaultTag.style.display = 'none';
       elBtnSingleMint.disabled = true;
     }
@@ -489,6 +547,7 @@ function updateGpgUi(sourceName) {
 }
 
 async function autoLoadKeys() {
+  loadPersistedState();
   try {
     log('Auto-loading keys.json from local repository...', 'info');
     const resp = await fetch('./keys.json');
@@ -552,7 +611,6 @@ async function runBatchGenerator() {
       log('Error generating key #' + currNum + ': ' + err.message, 'error');
     }
 
-    // Give browser UI micro-task breath
     await new Promise(function(r) { setTimeout(r, 10); });
   }
 
@@ -597,7 +655,7 @@ function renderVaultUi() {
 
   let html = '';
   list.forEach(function(k) {
-    const isUsed = !!k.used;
+    const isUsed = !!k.used || usedKeyIdsSet.has(k.id);
     const hasPriv = !!k.privateKey;
     const hasRev = !!k.revocationCertificate;
 
@@ -624,7 +682,7 @@ function renderVaultUi() {
     html += '    <button type="button" class="btn btn-tiny btn-muted" onclick="downloadKeyFile(' + k.id + ', \'pub\')">.PUB</button>';
     if (hasPriv) html += '    <button type="button" class="btn btn-tiny btn-muted" onclick="downloadKeyFile(' + k.id + ', \'priv\')">.KEY</button>';
     if (hasRev)  html += '    <button type="button" class="btn btn-tiny btn-muted" onclick="downloadKeyFile(' + k.id + ', \'rev\')">.REV</button>';
-    html += '    <button type="button" class="btn btn-tiny btn-green" onclick="downloadSingleBundle(' + k.id + ')">BUNDLE (TXT)</button>';
+    html += '    <button type="button" class="btn btn-tiny btn-green" onclick="downloadSingleBundle(' + k.id + ')">BUNDLE</button>';
     html += '  </div>';
     html += '</div>';
   });
@@ -640,6 +698,7 @@ function recordAdminMint(entry) {
   } else {
     adminRegistry.push(entry);
   }
+  persistAdminRegistry();
   renderAdminUi();
 }
 
@@ -721,7 +780,6 @@ window.openKeyModal = function(keyId) {
   selectedModalKey = item;
   elModalTitle.textContent = '🔒 Cryptographic Inspector — Key #' + item.id + (item.email ? ' (' + item.email + ')' : '');
 
-  // Populate Meta Grid
   let metaHtml = '';
   metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Key ID</span><span class="modal-meta-v">#' + item.id + '</span></div>';
   metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">User Identity</span><span class="modal-meta-v">' + escapeHtml(item.name || 'Anonymous') + '</span></div>';
@@ -882,6 +940,7 @@ async function connectBrowserWallet() {
     elBtnSingleMint.disabled = false;
     log('Connected wallet: ' + connectedAddress + ' (' + parseFloat(balEth).toFixed(5) + ' ETH)', 'success');
     fetchWalletGas();
+    verifyNextKeyCandidate();
   } catch (err) {
     log('Wallet connection failed: ' + sanitizeError(err), 'error');
     if (elBtnConnect) {
@@ -933,6 +992,16 @@ async function executeSingleMint() {
       alert('No unused GPG keys available in pool. Generate one with the generator tab or load keys.json.');
       return;
     }
+    // Final on-chain check
+    const isUsed = await checkKeyUsedOnChain(chosenKey.armoredKey);
+    if (isUsed) {
+      log('Active key #' + chosenKey.id + ' is already used on-chain! Skipping...', 'warn');
+      chosenKey.used = true;
+      persistUsedKeyId(chosenKey.id);
+      updateGpgUi();
+      executeSingleMint(); // retry with next key
+      return;
+    }
   } else if (walletKeySource === 'generate') {
     if (!quickGeneratedKey) {
       alert('Please click "GENERATE NEW KEYPAIR NOW" first.');
@@ -978,11 +1047,12 @@ async function executeSingleMint() {
     const blockNum = receipt.blockNumber;
     const gasUsed = receipt.gasUsed.toString();
 
-    // Mark key as used & bind to wallet
+    // Mark key as used & persist
     chosenKey.used = true;
     chosenKey.usedByAddress = connectedAddress;
     chosenKey.txHash = tx.hash;
     chosenKey.mode = 'wallet';
+    persistUsedKeyId(chosenKey.id);
 
     // Parse Token ID if available from Visus event
     let tokenId = null;
@@ -1020,7 +1090,12 @@ async function executeSingleMint() {
       timestamp: new Date().toISOString()
     });
 
-    // Update UI
+    // Reset quick generated key if used
+    if (walletKeySource === 'generate') {
+      quickGeneratedKey = null;
+    }
+
+    // Update UI immediately advancing to next unused key
     updateGpgUi();
     renderVaultUi();
 
@@ -1062,7 +1137,6 @@ async function executeSingleMint() {
 }
 
 // ── QUICK KEY GENERATOR FOR WALLET MODE ───────────────────────────────────────
-let quickGeneratedKey = null;
 async function runQuickWalletGenerator() {
   if (isGeneratingKeys) return;
   isGeneratingKeys = true;
@@ -1166,7 +1240,6 @@ async function runBulkBatchSequence() {
       continue;
     }
 
-    // Get next unused key or generate one on the fly
     let gpgKey = getNextUnusedKey();
     if (!gpgKey) {
       log('[' + currNum + '/' + total + '] Pool depleted — auto-generating key on the fly...', 'warn');
@@ -1190,6 +1263,16 @@ async function runBulkBatchSequence() {
       addToVault(gpgKey);
     }
 
+    // Verify key on-chain before sending
+    const isUsed = await checkKeyUsedOnChain(gpgKey.armoredKey);
+    if (isUsed) {
+      log('[' + currNum + '/' + total + '] Key #' + gpgKey.id + ' is already used on-chain! Skipping...', 'warn');
+      gpgKey.used = true;
+      persistUsedKeyId(gpgKey.id);
+      i--; // repeat current wallet with next key
+      continue;
+    }
+
     gpgKey.inProgress = true;
     log('[' + currNum + '/' + total + '] Processing wallet ' + addr + ' with GPG Key #' + gpgKey.id + '...', 'info');
 
@@ -1206,7 +1289,6 @@ async function runBulkBatchSequence() {
         continue;
       }
 
-      // Dynamic minimum fee calculation
       const feeData = await provider.getFeeData();
       const base = feeData.maxFeePerGas || ethers.parseUnits('0.2', 'gwei');
       const tip  = ethers.parseUnits(MIN_SAFE_PRIORITY_GWEI, 'gwei');
@@ -1228,8 +1310,8 @@ async function runBulkBatchSequence() {
       gpgKey.inProgress = false;
       gpgKey.usedByAddress = addr;
       gpgKey.txHash = tx.hash;
+      persistUsedKeyId(gpgKey.id);
 
-      // Parse token ID
       let tokenId = null;
       if (receipt.logs) {
         for (const lg of receipt.logs) {
@@ -1356,7 +1438,7 @@ function exportVaultTxt() {
 }
 
 function exportUnusedJson() {
-  const unused = keyVault.filter(function(k) { return !k.used; });
+  const unused = keyVault.filter(function(k) { return !k.used && !usedKeyIdsSet.has(k.id); });
   const content = JSON.stringify(unused, null, 2);
   triggerDownload('keys-unused-pool.json', content, 'application/json');
   log('Exported ' + unused.length + ' unused keys as keys-unused-pool.json.', 'success');
@@ -1396,15 +1478,13 @@ function exportAdminCsv() {
 
 // ── EVENT LISTENERS & INITIALIZATION ───────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-  log('Initializing they · seen Autonomous Engine & Cryptographic Vault v4.0...', 'info');
+  log('Initializing they · seen Autonomous Engine & Cryptographic Vault v4.1...', 'info');
 
-  // Navigation mode switches
   if (elModeBtnWallet) elModeBtnWallet.addEventListener('click', function() { switchMode('wallet'); });
   if (elModeBtnBulk)   elModeBtnBulk.addEventListener('click', function() { switchMode('bulk'); });
   if (elModeBtnVault)  elModeBtnVault.addEventListener('click', function() { switchMode('vault'); });
   if (elModeBtnAdmin)  elModeBtnAdmin.addEventListener('click', function() { switchMode('admin'); });
 
-  // Wallet mode key source tabs
   if (elWmTabPool) elWmTabPool.addEventListener('click', function() {
     walletKeySource = 'pool';
     elWmTabPool.classList.add('active');
@@ -1451,7 +1531,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (elWmBtnQuickGen) elWmBtnQuickGen.addEventListener('click', runQuickWalletGenerator);
 
-  // Wallet connection
   if (elBtnConnect) elBtnConnect.addEventListener('click', connectBrowserWallet);
   if (elBtnDisconnect) elBtnDisconnect.addEventListener('click', disconnectBrowserWallet);
   if (elBtnSwitchNetwork) elBtnSwitchNetwork.addEventListener('click', switchWalletToMainnet);
@@ -1460,7 +1539,6 @@ document.addEventListener('DOMContentLoaded', function() {
   if (elWmBtnExportKeys) elWmBtnExportKeys.addEventListener('click', exportVaultJson);
   if (elWmBtnDownloadVault) elWmBtnDownloadVault.addEventListener('click', exportVaultTxt);
 
-  // Bulk Mode
   if (elBtnInitiate) elBtnInitiate.addEventListener('click', runBulkBatchSequence);
   if (elBtnAbort) elBtnAbort.addEventListener('click', function() { abortFlag = true; log('Emergency abort signal registered.', 'warn'); });
   if (elBtnFetchGas) elBtnFetchGas.addEventListener('click', fetchBulkGas);
@@ -1481,7 +1559,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (elStatWallets) elStatWallets.textContent = c;
   });
 
-  // Generator & Vault (Option 3)
   if (elBtnRunGenerator) elBtnRunGenerator.addEventListener('click', runBatchGenerator);
   if (elBtnDownloadVaultJson) elBtnDownloadVaultJson.addEventListener('click', exportVaultJson);
   if (elBtnDownloadVaultTxt)  elBtnDownloadVaultTxt.addEventListener('click', exportVaultTxt);
@@ -1497,7 +1574,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   if (elVaultSearchInput) elVaultSearchInput.addEventListener('input', renderVaultUi);
 
-  // Vault import file
   if (elBtnImportVault) elBtnImportVault.addEventListener('click', function() { if (elFileImportVault) elFileImportVault.click(); });
   if (elFileImportVault) elFileImportVault.addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -1512,7 +1588,6 @@ document.addEventListener('DOMContentLoaded', function() {
     reader.readAsText(file);
   });
 
-  // Admin Registry (Option 4)
   if (elAdmSearchInput) elAdmSearchInput.addEventListener('input', renderAdminUi);
   document.querySelectorAll('.adm-f-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -1527,12 +1602,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if (elAdmBtnClear) elAdmBtnClear.addEventListener('click', function() {
     if (confirm('Clear admin registry log?')) {
       adminRegistry = [];
+      persistAdminRegistry();
       renderAdminUi();
       log('Admin registry log cleared.', 'warn');
     }
   });
 
-  // Modal
   if (elModalClose) elModalClose.addEventListener('click', function() { elModalOverlay.style.display = 'none'; });
   if (elModalOverlay) elModalOverlay.addEventListener('click', function(e) {
     if (e.target === elModalOverlay) elModalOverlay.style.display = 'none';
@@ -1559,7 +1634,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (elBtnClearConsole) elBtnClearConsole.addEventListener('click', logClear);
 
-  // Auto-load keys.json on boot
   autoLoadKeys();
   fetchWalletGas();
 });
