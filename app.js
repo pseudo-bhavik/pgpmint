@@ -105,8 +105,9 @@
 
   // ── UTILITIES ───────────────────────────────────────────────────────────────
   function escapeHtml(str) {
-    if (typeof str !== 'string') return String(str || '');
-    return str
+    if (str === null || str === undefined) return '';
+    const s = typeof str !== 'string' ? String(str) : str;
+    return s
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -117,7 +118,8 @@
   function sanitizeError(err) {
     if (!err) return 'Unknown error occurred.';
     let msg = err.reason || err.shortMessage || err.message || String(err);
-    msg = msg.replace(/0x[a-fA-F0-9]{64}/g, '[REDACTED_HEX]');
+    msg = msg.replace(/0x[a-fA-F0-9]{64}/gi, '[REDACTED_HEX]');
+    msg = msg.replace(/\b[a-fA-F0-9]{64}\b/gi, '[REDACTED_HEX]');
     return escapeHtml(msg);
   }
 
@@ -703,7 +705,8 @@
       if (k.email) html += '  <div class="vc-email">&lt;' + escapeHtml(k.email) + '&gt;</div>';
 
       if (k.usedByAddress) {
-        html += '  <div class="vc-mapped">&#128279; Bound Wallet: <span class="code-green">' + k.usedByAddress.substring(0, 10) + '...' + k.usedByAddress.substring(36) + '</span></div>';
+        const shortBound = k.usedByAddress.length > 20 ? (k.usedByAddress.substring(0, 10) + '...' + k.usedByAddress.substring(36)) : k.usedByAddress;
+        html += '  <div class="vc-mapped">&#128279; Bound Wallet: <span class="code-green">' + escapeHtml(shortBound) + '</span></div>';
       }
 
       html += '  <div class="vc-actions" style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">';
@@ -771,14 +774,14 @@
 
     let html = '';
     list.forEach(function(r, idx) {
-      const shortAddr = r.walletAddress.substring(0, 8) + '...' + r.walletAddress.substring(36);
-      const shortTx   = r.txHash ? (r.txHash.substring(0, 10) + '...' + r.txHash.substring(60)) : '-';
-      const txLink    = r.txHash ? ('<a href="https://etherscan.io/tx/' + r.txHash + '" target="_blank" class="code-green">' + shortTx + ' &nearr;</a>') : '-';
-      const tokenDisplay = r.tokenId ? ('<a href="https://theyarefound.com/' + r.tokenId + '" target="_blank" class="amber">#' + r.tokenId + ' &nearr;</a>') : 'Pending Batch Survey';
+      const shortAddr = r.walletAddress && r.walletAddress.length > 20 ? (r.walletAddress.substring(0, 8) + '...' + r.walletAddress.substring(36)) : String(r.walletAddress || '');
+      const shortTx   = r.txHash ? (r.txHash.length > 20 ? (r.txHash.substring(0, 10) + '...' + r.txHash.substring(60)) : r.txHash) : '-';
+      const txLink    = r.txHash ? ('<a href="https://etherscan.io/tx/' + encodeURIComponent(r.txHash) + '" target="_blank" rel="noopener noreferrer" class="code-green">' + escapeHtml(shortTx) + ' &nearr;</a>') : '-';
+      const tokenDisplay = r.tokenId ? ('<a href="https://theyarefound.com/' + encodeURIComponent(r.tokenId) + '" target="_blank" rel="noopener noreferrer" class="amber">#' + escapeHtml(r.tokenId) + ' &nearr;</a>') : 'Pending Batch Survey';
 
       html += '<tr>';
       html += '  <td>' + (idx + 1) + '</td>';
-      html += '  <td><a href="https://etherscan.io/address/' + r.walletAddress + '" target="_blank" class="code-green">' + shortAddr + ' &nearr;</a></td>';
+      html += '  <td><a href="https://etherscan.io/address/' + encodeURIComponent(r.walletAddress) + '" target="_blank" rel="noopener noreferrer" class="code-green">' + escapeHtml(shortAddr) + ' &nearr;</a></td>';
       html += '  <td>' + escapeHtml(r.name || ('Key #' + r.keyId)) + '<br><span style="font-size:9.5px; color:var(--text-dim);">' + escapeHtml(r.email || '') + '</span></td>';
       html += '  <td><button type="button" class="btn btn-tiny btn-muted btn-inspect-key" data-key-id="' + r.keyId + '">KEY #' + r.keyId + '</button></td>';
       html += '  <td><span class="v-badge ' + (r.hasPrivateKey ? 'priv' : 'used') + '">' + (r.hasPrivateKey ? '✓ SAVED' : 'NO') + '</span></td>';
@@ -809,12 +812,13 @@
     if (elModalTitle) elModalTitle.textContent = '🔒 Cryptographic Inspector — Key #' + item.id + (item.email ? ' (' + item.email + ')' : '');
 
     let metaHtml = '';
-    metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Key ID</span><span class="modal-meta-v">#' + item.id + '</span></div>';
+    metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Key ID</span><span class="modal-meta-v">#' + escapeHtml(item.id) + '</span></div>';
     metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">User Identity</span><span class="modal-meta-v">' + escapeHtml(item.name || 'Anonymous') + '</span></div>';
     metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Email Address</span><span class="modal-meta-v">' + escapeHtml(item.email || '-') + '</span></div>';
-    metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Creation Date</span><span class="modal-meta-v">' + (item.createdAt || '-') + '</span></div>';
-    metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Mapped Wallet</span><span class="modal-meta-v code-green">' + (item.usedByAddress || 'Unassigned') + '</span></div>';
-    metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Token ID / Tx</span><span class="modal-meta-v amber">' + (item.tokenId ? ('#' + item.tokenId) : (item.txHash ? item.txHash.substring(0, 16) + '...' : '-')) + '</span></div>';
+    metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Creation Date</span><span class="modal-meta-v">' + escapeHtml(item.createdAt || '-') + '</span></div>';
+    metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Mapped Wallet</span><span class="modal-meta-v code-green">' + escapeHtml(item.usedByAddress || 'Unassigned') + '</span></div>';
+    const displayTx = item.tokenId ? ('#' + item.tokenId) : (item.txHash ? (item.txHash.substring(0, 16) + '...') : '-');
+    metaHtml += '<div class="modal-meta-item"><span class="modal-meta-k">Token ID / Tx</span><span class="modal-meta-v amber">' + escapeHtml(displayTx) + '</span></div>';
     if (elModalMetaGrid) elModalMetaGrid.innerHTML = metaHtml;
 
     setModalTab('pub');
@@ -1158,10 +1162,10 @@
         let resultHtml = '<div class="mint-success-card" style="padding:14px; background:rgba(0,255,102,0.06); border:1px solid var(--green); margin-top:14px;">';
         resultHtml += '<div style="font-weight:700; color:var(--green); font-size:13px; margin-bottom:6px;">✓ TRANSACTION CONFIRMED ON ETHEREUM MAINNET!</div>';
         resultHtml += '<div style="font-size:11px; line-height:1.7;">';
-        resultHtml += '  <div><strong>Transaction Hash:</strong> <a href="https://etherscan.io/tx/' + tx.hash + '" target="_blank" class="code-green">' + tx.hash + ' &nearr;</a></div>';
-        resultHtml += '  <div><strong>Block:</strong> ' + blockNum + ' &bull; <strong>Gas Used:</strong> ' + gasUsed + '</div>';
+        resultHtml += '  <div><strong>Transaction Hash:</strong> <a href="https://etherscan.io/tx/' + encodeURIComponent(tx.hash) + '" target="_blank" rel="noopener noreferrer" class="code-green">' + escapeHtml(tx.hash) + ' &nearr;</a></div>';
+        resultHtml += '  <div><strong>Block:</strong> ' + escapeHtml(blockNum) + ' &bull; <strong>Gas Used:</strong> ' + escapeHtml(gasUsed) + '</div>';
         if (tokenId) {
-          resultHtml += '  <div><strong>Assigned Token:</strong> <a href="https://theyarefound.com/' + tokenId + '" target="_blank" class="amber">Token #' + tokenId + ' &nearr;</a> (Status: <em>adhuc de te loquimur</em>)</div>';
+          resultHtml += '  <div><strong>Assigned Token:</strong> <a href="https://theyarefound.com/' + encodeURIComponent(tokenId) + '" target="_blank" rel="noopener noreferrer" class="amber">Token #' + escapeHtml(tokenId) + ' &nearr;</a> (Status: <em>adhuc de te loquimur</em>)</div>';
         }
         resultHtml += '</div>';
 
@@ -1462,20 +1466,20 @@
     const emptyRow = elExecTbody.querySelector('.empty-row');
     if (emptyRow) elExecTbody.innerHTML = '';
 
-    const shortAddr = addr.substring(0, 8) + '...' + addr.substring(36);
-    const shortTx = txHash && txHash !== '-' ? (txHash.substring(0, 10) + '...' + txHash.substring(60)) : '-';
-    const txLink = txHash && txHash !== '-' ? ('<a href="https://etherscan.io/tx/' + txHash + '" target="_blank" class="code-green">' + shortTx + ' &nearr;</a>') : '-';
+    const shortAddr = addr && addr.length > 20 ? (addr.substring(0, 8) + '...' + addr.substring(36)) : String(addr || '');
+    const shortTx = txHash && txHash !== '-' ? (txHash.length > 20 ? (txHash.substring(0, 10) + '...' + txHash.substring(60)) : txHash) : '-';
+    const txLink = txHash && txHash !== '-' ? ('<a href="https://etherscan.io/tx/' + encodeURIComponent(txHash) + '" target="_blank" rel="noopener noreferrer" class="code-green">' + escapeHtml(shortTx) + ' &nearr;</a>') : '-';
     const statusClass = status === 'SUCCESS' ? 'success' : (status === 'SKIPPED_NO_ETH' ? 'skipped' : 'failed');
 
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + idx + '</td>' +
-      '<td><a href="https://etherscan.io/address/' + addr + '" target="_blank" class="code-green">' + shortAddr + ' &nearr;</a></td>' +
+    tr.innerHTML = '<td>' + escapeHtml(idx) + '</td>' +
+      '<td><a href="https://etherscan.io/address/' + encodeURIComponent(addr) + '" target="_blank" rel="noopener noreferrer" class="code-green">' + escapeHtml(shortAddr) + ' &nearr;</a></td>' +
       '<td>' + (bal !== '-' ? (parseFloat(bal).toFixed(4) + ' ETH') : '-') + '</td>' +
-      '<td><button type="button" class="btn btn-tiny btn-muted btn-inspect-key" data-key-id="' + keyId + '">KEY #' + keyId + '</button></td>' +
+      '<td><button type="button" class="btn btn-tiny btn-muted btn-inspect-key" data-key-id="' + escapeHtml(keyId) + '">KEY #' + escapeHtml(keyId) + '</button></td>' +
       '<td>' + txLink + '</td>' +
-      '<td>' + block + '</td>' +
-      '<td>' + gasUsed + '</td>' +
-      '<td><span class="status-badge ' + statusClass + '">' + status + '</span></td>';
+      '<td>' + escapeHtml(block) + '</td>' +
+      '<td>' + escapeHtml(gasUsed) + '</td>' +
+      '<td><span class="status-badge ' + statusClass + '">' + escapeHtml(status) + '</span></td>';
 
     elExecTbody.appendChild(tr);
   }
@@ -1537,24 +1541,32 @@
     log('Exported Admin Registry JSON (' + adminRegistry.length + ' records).', 'success');
   }
 
+  function escapeCsv(val) {
+    const str = String(val === undefined || val === null ? '' : val);
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  }
+
   function exportAdminCsv() {
     const headers = ['ID', 'WalletAddress', 'KeyID', 'IdentityName', 'Email', 'HasPrivateKey', 'HasRevocationCert', 'TxHash', 'BlockNumber', 'GasUsed', 'TokenID', 'Mode', 'Status', 'Timestamp'];
     const rows = adminRegistry.map(function(r) {
       return [
         r.id,
-        r.walletAddress,
+        escapeCsv(r.walletAddress),
         r.keyId,
-        '"' + (r.name || '').replace(/"/g, '""') + '"',
-        '"' + (r.email || '').replace(/"/g, '""') + '"',
+        escapeCsv(r.name || ''),
+        escapeCsv(r.email || ''),
         r.hasPrivateKey ? 'TRUE' : 'FALSE',
         r.hasRevocationCert ? 'TRUE' : 'FALSE',
-        r.txHash || '',
-        r.blockNumber || '',
-        r.gasUsed || '',
-        r.tokenId || '',
-        r.mode || '',
-        r.status || '',
-        r.timestamp || ''
+        escapeCsv(r.txHash || ''),
+        escapeCsv(r.blockNumber || ''),
+        escapeCsv(r.gasUsed || ''),
+        escapeCsv(r.tokenId || ''),
+        escapeCsv(r.mode || ''),
+        escapeCsv(r.status || ''),
+        escapeCsv(r.timestamp || '')
       ].join(',');
     });
 
@@ -1908,6 +1920,52 @@
       };
       reader.readAsText(file);
     });
+
+    // Option 2 GPG Drop Zone & Paste Handlers
+    if (elGpgDropZone) {
+      elGpgDropZone.addEventListener('click', function() { if (elGpgFileInput) elGpgFileInput.click(); });
+      elGpgDropZone.addEventListener('dragover', function(e) { e.preventDefault(); elGpgDropZone.classList.add('drag-over'); });
+      elGpgDropZone.addEventListener('dragleave', function() { elGpgDropZone.classList.remove('drag-over'); });
+      elGpgDropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        elGpgDropZone.classList.remove('drag-over');
+        const file = e.dataTransfer && e.dataTransfer.files[0];
+        if (!file) return;
+        if (elDropFilename) elDropFilename.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const parsed = parseGpgJson(evt.target.result);
+          if (parsed) loadGpgKeys(parsed, file.name);
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    if (elGpgFileInput) {
+      elGpgFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (elDropFilename) elDropFilename.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const parsed = parseGpgJson(evt.target.result);
+          if (parsed) loadGpgKeys(parsed, file.name);
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    if (elGpgPasteInput) {
+      elGpgPasteInput.addEventListener('input', function() {
+        const val = elGpgPasteInput.value.trim();
+        if (!val || val.length < 10) return;
+        const parsed = parseGpgJson(val);
+        if (parsed) {
+          loadGpgKeys(parsed, 'Pasted JSON Array');
+          elGpgPasteInput.value = '';
+        }
+      });
+    }
 
     // Option 4 Buttons
     if (elAdmSearchInput) elAdmSearchInput.addEventListener('input', renderAdminUi);
